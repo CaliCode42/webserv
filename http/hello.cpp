@@ -39,9 +39,6 @@ int main()
 
         for (size_t i = 0; i < fds.size(); i++)
         {
-            // =========================
-            // 1. NOUVEAU CLIENT
-            // =========================
             if (fds[i].fd == serverSocket && (fds[i].revents & POLLIN))
             {
                 int client_fd = accept(serverSocket, NULL, NULL);
@@ -58,9 +55,6 @@ int main()
                 std::cout << "Client connected: " << client_fd << std::endl;
             }
 
-            // =========================
-            // 2. CLIENT ENVOIE DONNÉES
-            // =========================
             else if (fds[i].fd != serverSocket && (fds[i].revents & POLLIN))
             {
                 char buffer[4096];
@@ -92,7 +86,6 @@ int main()
 
                 std::cout << "Response sent to fd: " << fds[i].fd << std::endl;
 
-                // version simple: on ferme direct (OK pour étape 1)
                 close(fds[i].fd);
                 fds.erase(fds.begin() + i);
                 i--;

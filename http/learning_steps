@@ -1,10 +1,10 @@
-1.	Réseau TCP
-2.	Socket serveur minimal
-3.	HTTP minimal
-4.	Multi-clients avec poll()
-5.	Architecture propre
-6.	Parsing HTTP robuste
-7.	Configuration
-8.	CGI
-9.	Upload / POST
-10.	Robustesse finale
+1.	Réseau TCP					OK
+2.	Socket serveur minimal		OK
+3.	HTTP minimal				OK
+4.	Multi-clients avec poll()	OK
+5.	Architecture propre			
+6.	Parsing HTTP robuste		
+7.	Configuration				
+8.	CGI							
+9.	Upload / POST				
+10.	Robustesse finale			
