@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:40:20 by tcali             #+#    #+#             */
-/*   Updated: 2026/05/29 18:41:19 by tcali            ###   ########.fr       */
+/*   Updated: 2026/06/15 16:29:58 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,4 +36,24 @@ Client::Client(int fd) : _fd(fd)
 Client::~Client()
 {
 	std::cout << "[Client] Destructor called" << std::endl;
+}
+
+int			Client::getFd()const
+{
+	return (_fd);
+}
+
+std::string &getBuffer()
+{
+	return (_buffer);
+}
+
+void		appendToBuffer(const std::string &data)
+{
+	_buffer += data;
+}
+
+void		clearBuffer()
+{
+	_buffer.clear();
 }
