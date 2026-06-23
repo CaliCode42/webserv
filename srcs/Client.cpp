@@ -6,13 +6,18 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:40:20 by tcali             #+#    #+#             */
-/*   Updated: 2026/06/15 16:29:58 by tcali            ###   ########.fr       */
+/*   Updated: 2026/06/23 10:55:42 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Client.hpp"
 
-Client::Client(int fd) : _fd(fd)
+Client::Client()
+    : _fd(-1)
+{
+}
+
+Client::Client(int fd) : _fd(fd), _isComplete(false)
 {
 	std::cout << "[Client] Default constructor called" << std::endl;
 }
@@ -38,22 +43,22 @@ Client::~Client()
 	std::cout << "[Client] Destructor called" << std::endl;
 }
 
-int			Client::getFd()const
+int			Client::getFd() const
 {
 	return (_fd);
 }
 
-std::string &getBuffer()
+std::string&	Client::getBuffer()
 {
 	return (_buffer);
 }
 
-void		appendToBuffer(const std::string &data)
+void		Client::appendToBuffer(const std::string &data)
 {
 	_buffer += data;
 }
 
-void		clearBuffer()
+void		Client::clearBuffer()
 {
 	_buffer.clear();
 }

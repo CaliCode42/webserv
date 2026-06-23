@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:16:17 by tcali             #+#    #+#             */
-/*   Updated: 2026/06/16 12:16:25 by tcali            ###   ########.fr       */
+/*   Updated: 2026/06/22 17:22:09 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 #define CLIENT_HPP
 
 #include <iostream>
+#include <string>
 #include "HttpRequest.hpp"
 
 class Client
@@ -22,7 +23,7 @@ private:
 	int			_fd;
 	std::string	_buffer;
 	HttpRequest _request;
-	bool		_isComplete = false;
+	bool		_isComplete;
 
 public:
 
@@ -32,19 +33,19 @@ public:
 	// Client& operator=(const Client& other);
 	~Client();
 
-	int			getFd() const;
+	int				getFd() const;
 
-	std::string &getBuffer();
+	std::string&	getBuffer();
 	
-	void		appendToBuffer(const std::string &data);
+	void			appendToBuffer(const std::string &data);
 	
-	void		clearBuffer();
+	void			clearBuffer();
 
-	void		setRequest(HttpRequest &request);
+	void			setRequest(HttpRequest &request);
 
-	bool		hasCompleteRequest() const;
+	bool			hasCompleteRequest() const;
 
-	std::string	extractRequest();
+	std::string		extractRequest();
 };
 
 #endif

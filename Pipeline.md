@@ -1,0 +1,23 @@
+main
+ ↓
+Server::initSocket()
+ ↓
+Server::run()
+ ↓
+poll()
+ ↓
+acceptClient()
+ ↓
+handleClientRead()
+ ↓
+Client::appendToBuffer()
+ ↓
+Client::hasCompleteRequest()
+ ↓
+Client::extractRequest()
+ ↓
+parseRequest()
+ ↓
+HttpResponse::toString()
+ ↓
+send()

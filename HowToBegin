@@ -1,0 +1,370 @@
+# Webserv - Guide de préparation avant de commencer le projet
+
+## Pourquoi cette fiche ?
+
+Le plus gros piège de webserv est de commencer à coder trop tôt.
+
+Beaucoup d'étudiants ouvrent le sujet, voient les mots :
+
+* HTTP
+* CGI
+* poll
+* Nginx
+
+et partent dans tous les sens.
+
+Le projet devient beaucoup plus simple si l'on construit progressivement son modèle mental.
+
+L'objectif de cette fiche est donc de donner un ordre d'apprentissage cohérent avant de rentrer dans l'implémentation.
+
+---
+
+# 1. Comprendre ce qu'est réellement un serveur web
+
+Avant toute chose, il faut comprendre ce que l'on cherche à reproduire.
+
+Un serveur web est simplement un programme qui :
+
+1. écoute sur un port ;
+2. accepte des connexions ;
+3. reçoit des requêtes HTTP ;
+4. renvoie des réponses HTTP.
+
+À ce stade, il n'est pas nécessaire de comprendre CGI ou Nginx.
+
+---
+
+## Ressources
+
+### Vidéo
+
+Hussein Nasser
+
+"What Happens When You Type a URL in Your Browser"
+
+Durée : ~15 minutes
+
+Permet de comprendre :
+
+* navigateur ;
+* DNS ;
+* TCP ;
+* HTTP ;
+* serveur web.
+
+---
+
+# 2. Comprendre les sockets
+
+C'est la base absolue du projet.
+
+Avant de parler de HTTP, il faut savoir :
+
+* créer une socket ;
+* écouter sur un port ;
+* accepter un client ;
+* envoyer et recevoir des données.
+
+Fonctions à connaître :
+
+```cpp
+socket()
+bind()
+listen()
+accept()
+recv()
+send()
+close()
+```
+
+---
+
+## À savoir expliquer
+
+### Pourquoi accept() retourne un nouveau fd ?
+
+### Quelle différence entre :
+
+* socket serveur ;
+* socket client ?
+
+### Pourquoi la socket serveur reste ouverte après accept() ?
+
+### Pourquoi un serveur peut accepter plusieurs clients ?
+
+---
+
+## Ressources
+
+### Beej's Guide to Network Programming
+
+https://beej.us/guide/bgnet/
+
+LA référence pour comprendre les sockets.
+
+Lire au minimum :
+
+* socket()
+* bind()
+* listen()
+* accept()
+
+---
+
+### Vidéo
+
+CodeVault
+
+Socket Programming in C++
+
+Les vidéos sont courtes et vont directement à l'essentiel.
+
+---
+
+# 3. Comprendre HTTP
+
+Une fois les sockets comprises.
+
+HTTP est simplement un protocole texte.
+
+Exemple de requête :
+
+```http
+GET / HTTP/1.1
+Host: localhost
+
+```
+
+Exemple de réponse :
+
+```http
+HTTP/1.1 200 OK
+Content-Type: text/html
+Content-Length: 11
+
+<h1>Hi</h1>
+```
+
+---
+
+## À savoir expliquer
+
+### Pourquoi "hello" ne s'affiche pas dans un navigateur ?
+
+### À quoi sert Content-Length ?
+
+### À quoi sert Content-Type ?
+
+### Pourquoi le navigateur sait-il afficher du HTML ?
+
+---
+
+## Ressources
+
+### MDN HTTP
+
+https://developer.mozilla.org/en-US/docs/Web/HTTP
+
+Lire :
+
+* HTTP Overview
+* HTTP Messages
+
+---
+
+### HTTP Cats
+
+https://http.cat/
+
+Excellent moyen de retenir les codes HTTP.
+
+---
+
+# 4. Comprendre le problème des serveurs bloquants
+
+Le premier serveur que l'on écrit ressemble souvent à :
+
+```cpp
+while (true)
+{
+    accept();
+    recv();
+}
+```
+
+Il fonctionne.
+
+Mais il ne gère pas correctement plusieurs clients.
+
+---
+
+## À savoir expliquer
+
+### Pourquoi recv() est-il bloquant ?
+
+### Pourquoi un client lent peut-il bloquer les autres ?
+
+### Pourquoi accept() seul ne suffit-il pas ?
+
+---
+
+# 5. Comprendre poll()
+
+Une fois le problème identifié.
+
+poll() permet au serveur de savoir :
+
+```text
+Quel fd est prêt à être lu ?
+```
+
+sans bloquer tous les autres.
+
+---
+
+## À savoir expliquer
+
+### Que contient une structure pollfd ?
+
+### Que signifie POLLIN ?
+
+### Que représente revents ?
+
+### Pourquoi poll() est-il utilisé dans webserv ?
+
+---
+
+## Ressources
+
+### Documentation Linux
+
+https://man7.org/linux/man-pages/man2/poll.2.html
+
+---
+
+### Vidéo
+
+CodeVault
+
+poll() system call
+
+Courte et suffisante pour comprendre le principe.
+
+---
+
+# 6. Comprendre TCP
+
+Concept fondamental.
+
+À retenir absolument :
+
+```text
+1 recv != 1 requête HTTP
+```
+
+TCP est un flux.
+
+Une requête peut être :
+
+* coupée sur plusieurs recv ;
+* ou plusieurs requêtes peuvent arriver dans un seul recv.
+
+C'est probablement l'idée la plus importante du projet.
+
+---
+
+## À savoir expliquer
+
+### Pourquoi un buffer par client est nécessaire ?
+
+### Pourquoi ne faut-il pas parser immédiatement après recv() ?
+
+---
+
+# 7. Commencer à réfléchir à l'architecture
+
+Une fois les concepts précédents compris.
+
+Avant de coder sérieusement, réfléchir aux responsabilités.
+
+Architecture minimale recommandée :
+
+```text
+Server
+Client
+HttpRequest
+HttpResponse
+```
+
+---
+
+# 8. Ce qu'il n'est PAS nécessaire de comprendre immédiatement
+
+Ne pas perdre du temps trop tôt sur :
+
+* CGI
+* Upload
+* Cookies
+* Configuration nginx
+* Keep-Alive avancé
+
+Ces sujets deviennent beaucoup plus simples une fois :
+
+* les sockets maîtrisées ;
+* poll compris ;
+* HTTP compris.
+
+---
+
+# Ressources complémentaires
+
+## Documentation C++
+
+cppreference
+
+https://en.cppreference.com/
+
+Pour toutes les questions liées au C++.
+
+---
+
+## Réseau
+
+Beej's Guide
+
+https://beej.us/guide/bgnet/
+
+---
+
+## HTTP
+
+MDN
+
+https://developer.mozilla.org/en-US/docs/Web/HTTP
+
+---
+
+## Linux man pages
+
+https://man7.org/linux/man-pages/
+
+Très utile pour :
+
+* socket
+* bind
+* listen
+* accept
+* poll
+
+---
+
+# Conseils
+
+Avant de commencer le vrai projet :
+
+* réussir à afficher une page HTML dans un navigateur ;
+* comprendre parfaitement accept() ;
+* comprendre parfaitement poll() ;
+* être capable d'expliquer pourquoi un buffer par client est nécessaire.
+
+Si ces points sont maîtrisés, le projet devient beaucoup plus abordable.

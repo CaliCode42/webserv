@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:16:25 by tcali             #+#    #+#             */
-/*   Updated: 2026/06/15 16:49:01 by tcali            ###   ########.fr       */
+/*   Updated: 2026/06/22 17:14:47 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 #define HTTPREQUEST_HPP
 
 #include <iostream>
+#include <map>
 
 class HttpRequest
 {

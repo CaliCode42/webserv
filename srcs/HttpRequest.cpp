@@ -6,11 +6,12 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:41:34 by tcali             #+#    #+#             */
-/*   Updated: 2026/06/16 12:09:00 by tcali            ###   ########.fr       */
+/*   Updated: 2026/06/22 17:28:00 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "HttpRequest.hpp"
+#include <sstream>
 
 HttpRequest::HttpRequest()
 {
@@ -54,7 +55,7 @@ HttpRequest parseRequest(const std::string& raw)
 	std::getline(stream, line);
 	{
 		std::istringstream requestLine(line);
-		requestLine >> req.method >> req.path >> req.version;
+		requestLine >> req._method >> req._path >> req._version;
 	}
 
 	while (std::getline(stream, line))
@@ -68,7 +69,7 @@ HttpRequest parseRequest(const std::string& raw)
 			if (!value.empty() && value[0] == ' ')
 				value.erase(0, 1);
 
-			req.headers[key] = value;
+			req._headers[key] = value;
 		}
 	}
 

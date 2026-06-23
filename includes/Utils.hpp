@@ -1,38 +1,27 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   HttpResponse.hpp                                   :+:      :+:    :+:   */
+/*   Utils.hpp                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/05/29 18:16:35 by tcali             #+#    #+#             */
-/*   Updated: 2026/06/22 17:28:15 by tcali            ###   ########.fr       */
+/*   Created: 2026/06/23 10:52:18 by tcali             #+#    #+#             */
+/*   Updated: 2026/06/23 10:52:20 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef HTTPRESPONSE_HPP
-#define HTTPRESPONSE_HPP
+#ifndef UTILS_HPP
+#define UTILS_HPP
 
-#include <iostream>
-#include <map>
+#include <string>
+#include <sstream>
 
-class HttpResponse
+template <typename T>
+std::string toString(T value)
 {
-private:
-	
-
-public:
-	int			_statusCode;
-	std::string _body;
-
-	std::map<std::string, std::string> _headers;
-
-	std::string toString();
-
-	HttpResponse();
-	// HttpResponse(const HttpResponse& other);
-	// HttpResponse& operator=(const HttpResponse& other);
-	~HttpResponse();
-};
+    std::stringstream ss;
+    ss << value;
+    return ss.str();
+}
 
 #endif

@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:16:04 by tcali             #+#    #+#             */
-/*   Updated: 2026/06/16 17:28:34 by tcali            ###   ########.fr       */
+/*   Updated: 2026/06/22 18:03:38 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,12 +15,17 @@
 
 #include <exception>
 #include <iostream>
+#include <vector>
+#include <map>
+#include <sys/poll.h>
+#include <sys/socket.h>
+#include "Client.hpp"
 
 class Server
 {
 private:
-	int						_serverSocket;
 	int						_port;
+	int						_serverSocket;
 	std::vector<pollfd>		_fds;
 	std::map<int, Client>	_clients;
 
