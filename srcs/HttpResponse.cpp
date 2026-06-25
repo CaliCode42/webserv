@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:42:55 by tcali             #+#    #+#             */
-/*   Updated: 2026/05/29 18:43:42 by tcali            ###   ########.fr       */
+/*   Updated: 2026/06/25 11:24:15 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 
 HttpResponse::HttpResponse() : _statusCode(0)
 {
-	std::cout << "[HttpResponse] Default constructor called" << std::endl;
+	// std::cout << "[HttpResponse] Default constructor called" << std::endl;
 }
 
 // HttpResponse::HttpResponse(const HttpResponse& other)
@@ -35,5 +35,5 @@ HttpResponse::HttpResponse() : _statusCode(0)
 
 HttpResponse::~HttpResponse()
 {
-	std::cout << "[HttpResponse] Destructor called" << std::endl;
+	// std::cout << "[HttpResponse] Destructor called" << std::endl;
 }

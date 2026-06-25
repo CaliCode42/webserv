@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:40:20 by tcali             #+#    #+#             */
-/*   Updated: 2026/06/23 10:55:42 by tcali            ###   ########.fr       */
+/*   Updated: 2026/06/25 11:23:54 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,7 +19,7 @@ Client::Client()
 
 Client::Client(int fd) : _fd(fd), _isComplete(false)
 {
-	std::cout << "[Client] Default constructor called" << std::endl;
+	// std::cout << "[Client] Default constructor called" << std::endl;
 }
 
 // Client::Client(const Client& other)
@@ -40,7 +40,7 @@ Client::Client(int fd) : _fd(fd), _isComplete(false)
 
 Client::~Client()
 {
-	std::cout << "[Client] Destructor called" << std::endl;
+	// std::cout << "[Client] Destructor called" << std::endl;
 }
 
 int			Client::getFd() const
