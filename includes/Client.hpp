@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:16:17 by tcali             #+#    #+#             */
-/*   Updated: 2026/06/22 17:22:09 by tcali            ###   ########.fr       */
+/*   Updated: 2026/07/06 14:20:51 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,7 +35,7 @@ public:
 
 	int				getFd() const;
 
-	std::string&	getBuffer();
+	const std::string&	getBuffer();
 	
 	void			appendToBuffer(const std::string &data);
 	

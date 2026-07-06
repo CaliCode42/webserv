@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:16:25 by tcali             #+#    #+#             */
-/*   Updated: 2026/06/22 17:14:47 by tcali            ###   ########.fr       */
+/*   Updated: 2026/07/06 14:15:08 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,7 +25,6 @@ public:
 	std::string	_method;
 	std::string	_path;
 	std::string	_version;
-	std::string	_host;
 
 	std::map<std::string, std::string> _headers;
 
@@ -36,7 +35,13 @@ public:
 	// HttpRequest& operator=(const HttpRequest& other);
 	~HttpRequest();
 
-	HttpRequest parseRequest(const std::string& raw);
+	void		parse(const std::string& raw);
+
+	const std::string&	getMethod()const;
+	const std::string&	getPath()const;
+	const std::string&	getVersion()const;
+
+	std::string	getHeader(const std::string& key) const;
 };
 
 #endif

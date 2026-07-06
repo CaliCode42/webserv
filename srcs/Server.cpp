@@ -6,13 +6,14 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:33:43 by tcali             #+#    #+#             */
-/*   Updated: 2026/06/23 10:53:59 by tcali            ###   ########.fr       */
+/*   Updated: 2026/07/06 14:03:22 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Server.hpp"
 #include "Utils.hpp"
 #include "Client.hpp"
+#include "HttpRequest.hpp"
 #include <unistd.h>
 #include <netinet/in.h>
 #include <string>
@@ -129,10 +130,19 @@ void	Server::handleClientRead(Client& client)
 		return ;
 	}
 
-	buffer[bytes] = '\0';
-	client.appendToBuffer(buffer);
+	client.appendToBuffer(std::string(buffer, bytes));
 
-	std::cout << client.getBuffer() << std::endl;
+	if (!client.hasCompleteRequest())
+        return;
+
+	std::string rawRequest = client.extractRequest();
+
+    HttpRequest request;
+	request.parse(rawRequest);
+
+    std::cout << "Method: " << request.getMethod() << std::endl;
+    std::cout << "Path: " << request.getPath() << std::endl;
+    std::cout << "Version: " << request.getVersion() << std::endl;
 
 	std::string body = "<h1>Hello webserv</h1>";
 
@@ -146,6 +156,7 @@ void	Server::handleClientRead(Client& client)
 	send(client.getFd(), response.c_str(), response.size(), 0);
 
 	std::cout << "Response sent to fd: " << client.getFd() << std::endl;
+	
 	removeClient(client.getFd());
 }
 

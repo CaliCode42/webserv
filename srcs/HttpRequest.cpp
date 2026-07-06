@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:41:34 by tcali             #+#    #+#             */
-/*   Updated: 2026/06/22 17:28:00 by tcali            ###   ########.fr       */
+/*   Updated: 2026/07/06 14:15:13 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,13 +39,11 @@ HttpRequest::~HttpRequest()
 	std::cout << "[HttpRequest] Destructor called" << std::endl;
 }
 
-HttpRequest parseRequest(const std::string& raw)
+void HttpRequest::parse(const std::string& raw)
 {
-	HttpRequest	req;
-
 	size_t pos = raw.find("\r\n\r\n");
 	if (pos == std::string::npos)
-		return (req);
+		return ;
 
 	std::string 		headerPart = raw.substr(0, pos);
 
@@ -53,13 +51,17 @@ HttpRequest parseRequest(const std::string& raw)
 	std::string			line;
 
 	std::getline(stream, line);
-	{
-		std::istringstream requestLine(line);
-		requestLine >> req._method >> req._path >> req._version;
-	}
+	
+	if (!line.empty() && line[line.size() - 1] == '\r')
+    	line.erase(line.size() - 1);
+	
+	std::istringstream requestLine(line);
+	requestLine >> _method >> _path >> _version;
 
 	while (std::getline(stream, line))
 	{
+		if (!line.empty() && line[line.size() - 1] == '\r')
+			line.erase(line.size() - 1);
 		size_t sep = line.find(":");
 		if (sep != std::string::npos)
 		{
@@ -69,9 +71,34 @@ HttpRequest parseRequest(const std::string& raw)
 			if (!value.empty() && value[0] == ' ')
 				value.erase(0, 1);
 
-			req._headers[key] = value;
+			_headers[key] = value;
 		}
 	}
 
-	return (req);
+	return ;
+}
+
+const std::string&	HttpRequest::getMethod()const
+{
+	return (_method);
+}
+
+const std::string&	HttpRequest::getPath()const
+{
+	return (_path);
+}
+
+const std::string&	HttpRequest::getVersion()const
+{
+	return (_version);
+}
+
+std::string	HttpRequest::getHeader(const std::string& key) const
+{
+	std::map<std::string, std::string>::const_iterator it = _headers.find(key);
+
+    if (it != _headers.end())
+        return (it->second);
+
+    return ("");
 }
