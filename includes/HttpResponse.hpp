@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:16:35 by tcali             #+#    #+#             */
-/*   Updated: 2026/06/22 17:28:15 by tcali            ###   ########.fr       */
+/*   Updated: 2026/07/20 13:51:21 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,20 +19,22 @@
 class HttpResponse
 {
 private:
-	
+	int									_statusCode;
+	std::string 						_statusMessage;
+	std::map<std::string, std::string>	_headers;
+	std::string							_body;
 
 public:
-	int			_statusCode;
-	std::string _body;
-
-	std::map<std::string, std::string> _headers;
-
-	std::string toString();
-
 	HttpResponse();
 	// HttpResponse(const HttpResponse& other);
 	// HttpResponse& operator=(const HttpResponse& other);
 	~HttpResponse();
+
+	void		setStatus(int code, const std::string& message);
+    void		setHeader(const std::string& key, const std::string& value);
+    void		setBody(const std::string& body);
+
+	std::string	toString() const;
 };
 
 #endif

@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:33:43 by tcali             #+#    #+#             */
-/*   Updated: 2026/07/06 14:03:22 by tcali            ###   ########.fr       */
+/*   Updated: 2026/07/20 13:58:30 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -144,16 +144,11 @@ void	Server::handleClientRead(Client& client)
     std::cout << "Path: " << request.getPath() << std::endl;
     std::cout << "Version: " << request.getVersion() << std::endl;
 
-	std::string body = "<h1>Hello webserv</h1>";
+	HttpResponse	response = _handler.handle(request);
 
-	std::string response =
-		"HTTP/1.1 200 OK\r\n"
-		"Content-Type: text/html\r\n"
-		"Content-Length: " + toString(body.size()) + "\r\n"
-		"\r\n" +
-		body;
+	std::string rawResponse = response.toString();
 
-	send(client.getFd(), response.c_str(), response.size(), 0);
+	send(client.getFd(), rawResponse.c_str(), rawResponse.size(), 0);
 
 	std::cout << "Response sent to fd: " << client.getFd() << std::endl;
 	

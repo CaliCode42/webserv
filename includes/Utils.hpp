@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/23 10:52:18 by tcali             #+#    #+#             */
-/*   Updated: 2026/06/23 10:52:20 by tcali            ###   ########.fr       */
+/*   Updated: 2026/07/20 13:54:51 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,11 +17,11 @@
 #include <sstream>
 
 template <typename T>
-std::string toString(T value)
+std::string turnIntoString(T value)
 {
     std::stringstream ss;
     ss << value;
-    return ss.str();
+    return (ss.str());
 }
 
 #endif

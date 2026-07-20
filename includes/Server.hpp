@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:16:04 by tcali             #+#    #+#             */
-/*   Updated: 2026/06/22 18:03:38 by tcali            ###   ########.fr       */
+/*   Updated: 2026/07/20 13:58:07 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,7 @@
 #include <sys/poll.h>
 #include <sys/socket.h>
 #include "Client.hpp"
+#include "RequestHandler.hpp"
 
 class Server
 {
@@ -28,6 +29,7 @@ private:
 	int						_serverSocket;
 	std::vector<pollfd>		_fds;
 	std::map<int, Client>	_clients;
+	RequestHandler			_handler;
 
 public:
 	Server(int port);

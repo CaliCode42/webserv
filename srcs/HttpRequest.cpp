@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:41:34 by tcali             #+#    #+#             */
-/*   Updated: 2026/07/06 17:31:20 by tcali            ###   ########.fr       */
+/*   Updated: 2026/07/20 14:19:15 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,6 +41,7 @@ HttpRequest::~HttpRequest()
 
 void HttpRequest::parse(const std::string& raw)
 {
+	// find end of headers
 	size_t pos = raw.find("\r\n\r\n");
 	if (pos == std::string::npos)
 		return ;
@@ -52,9 +53,11 @@ void HttpRequest::parse(const std::string& raw)
 
 	std::getline(stream, line);
 	
+	// remove '\r' from end of line
 	if (!line.empty() && line[line.size() - 1] == '\r')
     	line.erase(line.size() - 1);
 	
+	// get method, path and version from the request
 	std::istringstream requestLine(line);
 	requestLine >> _method >> _path >> _version;
 

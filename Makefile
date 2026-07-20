@@ -6,7 +6,7 @@
 #    By: tcali <tcali@student.42.fr>                +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/06/22 14:54:39 by tcali             #+#    #+#              #
-#    Updated: 2026/06/22 14:58:00 by tcali            ###   ########.fr        #
+#    Updated: 2026/07/20 14:00:22 by tcali            ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -25,6 +25,7 @@ SRC=\
 	$(SRC_DIR)/Client.cpp\
 	$(SRC_DIR)/HttpRequest.cpp\
 	$(SRC_DIR)/HttpResponse.cpp\
+	$(SRC_DIR)/RequestHandler.cpp\
 
 
 OBJ=$(SRC:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
