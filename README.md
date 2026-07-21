@@ -13,41 +13,46 @@ Un petit serveur HTTP écrit en C++ (conforme à la norme C++98) utilisé pour a
 ## Architecture actuelle
 
 ### Server
-|
+```
 ├── gère les sockets
 ├── poll()
 ├── accept()
 ├── recv()
 ├── send()
-└── possède les Client
+└── possède les Clients
+```
 
 ### Client
-|
+```
 ├── fd
 ├── buffer TCP
 ├── appendToBuffer()
 ├── hasCompleteRequest()
 └── extractRequest()
+```
 
 ### HttpRequest
-|
+```
 ├── parse()
 ├── method
 ├── path
 ├── version
 └── headers
+```
 
 ### RequestHandler
-|
+```
 ├── handle()
 └── handleGet()
+```
 
 ### HttpResponse
-|
+```
 ├── status
 ├── headers
 ├── body
 └── toString()
+```
 
 ## Contenu des dossiers (résumé)
 -
