@@ -143,7 +143,7 @@ Chaque description indique le rôle principal, les responsabilités et les inter
 	(actuellement juste turnIntoString)
 
 ## Flux d'une requête
-
+```
 Client
     │
     ▼
@@ -166,6 +166,7 @@ HttpResponse::toString()
     │
     ▼
 send()
+```
 
 ## Etat actuel et évolutions à venir
 ```
