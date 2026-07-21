@@ -13,7 +13,7 @@ Un petit serveur HTTP écrit en C++ (conforme à la norme C++98) utilisé pour a
 ## Architecture actuelle
 
 ### Server
-
+|
 ├── gère les sockets
 ├── poll()
 ├── accept()
@@ -22,7 +22,7 @@ Un petit serveur HTTP écrit en C++ (conforme à la norme C++98) utilisé pour a
 └── possède les Client
 
 ### Client
-
+|
 ├── fd
 ├── buffer TCP
 ├── appendToBuffer()
@@ -30,7 +30,7 @@ Un petit serveur HTTP écrit en C++ (conforme à la norme C++98) utilisé pour a
 └── extractRequest()
 
 ### HttpRequest
-
+|
 ├── parse()
 ├── method
 ├── path
@@ -38,12 +38,12 @@ Un petit serveur HTTP écrit en C++ (conforme à la norme C++98) utilisé pour a
 └── headers
 
 ### RequestHandler
-
+|
 ├── handle()
 └── handleGet()
 
 ### HttpResponse
-
+|
 ├── status
 ├── headers
 ├── body
