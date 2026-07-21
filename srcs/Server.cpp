@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:33:43 by tcali             #+#    #+#             */
-/*   Updated: 2026/07/20 13:58:30 by tcali            ###   ########.fr       */
+/*   Updated: 2026/07/20 15:44:07 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,13 @@
 #include <netinet/in.h>
 #include <string>
 
-Server::Server(int port) : _port(port), _serverSocket(-1)
+// Server::Server(int port): _port(port), _serverSocket(-1) 
+// {
+// 	std::cout << "[Server] constructor called: server created" << std::endl;
+// }
+
+Server::Server(int port, const ServerConfig& config): _port(port), _serverSocket(-1),
+	_config(config), _handler(_config)
 {
 	std::cout << "[Server] constructor called: server created" << std::endl;
 }
@@ -153,6 +159,8 @@ void	Server::handleClientRead(Client& client)
 	std::cout << "Response sent to fd: " << client.getFd() << std::endl;
 	
 	removeClient(client.getFd());
+
+	response.setHeader("Connection", "close");
 }
 
 void	Server::removeClient(int fd)

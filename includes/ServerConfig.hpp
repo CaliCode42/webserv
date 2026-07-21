@@ -1,22 +1,33 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   main.cpp                                           :+:      :+:    :+:   */
+/*   ServerConfig.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/06/22 14:50:12 by tcali             #+#    #+#             */
-/*   Updated: 2026/07/20 15:47:31 by tcali            ###   ########.fr       */
+/*   Created: 2026/07/20 15:35:09 by tcali             #+#    #+#             */
+/*   Updated: 2026/07/20 15:48:59 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "Server.hpp"
+#ifndef SERVERCONFIG_HPP
+#define SERVERCONFIG_HPP
 
-int main()
+#include <iostream>
+#include <string>
+
+class ServerConfig
 {
-	ServerConfig	config;
-    Server			server(8080, config);
-    server.initSocket();
-    server.run();
-    return 0;
-}
+private:
+	std::string	_root;
+
+public:
+	ServerConfig();
+	// ServerConfig(const ServerConfig& other);
+	// ServerConfig& operator=(const ServerConfig& other);
+	~ServerConfig();
+
+	std::string	getRoot() const;
+};
+
+#endif

@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/15 17:16:14 by tcali             #+#    #+#             */
-/*   Updated: 2026/07/20 14:08:32 by tcali            ###   ########.fr       */
+/*   Updated: 2026/07/20 15:33:13 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 #include <fstream>
 #include <sstream>
 
-RequestHandler::RequestHandler()
+RequestHandler::RequestHandler(const ServerConfig& config): _config(config)
 {
 	std::cout << "[RequestHandler] Default constructor called" << std::endl;
 }
@@ -72,7 +72,7 @@ HttpResponse RequestHandler::handleGet(const HttpRequest& request)
     }
 
     // Turn the path into a local path
-    std::string localPath = "www" + path;
+    std::string localPath = _config.getRoot() + path;
 
     // Open the file
     std::ifstream file(localPath.c_str(), std::ios::in | std::ios::binary);
