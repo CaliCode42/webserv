@@ -168,7 +168,7 @@ HttpResponse::toString()
 send()
 
 ## Etat actuel et évolutions à venir
-
+```
 ✔ Réseau (poll, accept, recv, send)
 ✔ Buffer TCP
 ✔ Parsing HTTP (basique pour GET)
@@ -177,6 +177,7 @@ send()
 ⬜ POST
 ⬜ CGI
 ⬜ DELETE
+```
 
 ## Ressources
 
