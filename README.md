@@ -12,7 +12,7 @@ Un petit serveur HTTP écrit en C++ (conforme à la norme C++98) utilisé pour a
 
 ## Architecture actuelle
 
-### Server
+Server
 |
 ├── gère les sockets
 ├── poll()
@@ -21,7 +21,7 @@ Un petit serveur HTTP écrit en C++ (conforme à la norme C++98) utilisé pour a
 ├── send()
 └── possède les Client
 
-### Client
+Client
 |
 ├── fd
 ├── buffer TCP
