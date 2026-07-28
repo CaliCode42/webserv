@@ -6,11 +6,12 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/25 19:50:52 by sdossa            #+#    #+#             */
-/*   Updated: 2026/07/27 20:40:20 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/07/28 19:11:44 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "MethodHandler.hpp"
+#include "../includes/ServerConfig.hpp"
 #include <cctype>
 #include <iostream>
 #include <cstdlib>
@@ -21,12 +22,13 @@
 #include <fstream>
 #include <cstdio>
 
+MethodHandler::MethodHandler(const ServerConfig& config) : _config(config) {}
 
 HttpResponse MethodHandler::handle(const HttpRequest& req)
 {
     if (req.getMethod() == "GET")
     {
-        std::string path = "/tmp/www" + req.getUri();
+        std::string path = _config.getRoot() + req.getUri();
         return handleGet(path);
     }
     HttpResponse res;

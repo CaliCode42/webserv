@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
+/*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:16:04 by tcali             #+#    #+#             */
-/*   Updated: 2026/07/20 15:44:11 by tcali            ###   ########.fr       */
+/*   Updated: 2026/07/28 16:37:17 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,8 @@
 #include <sys/poll.h>
 #include <sys/socket.h>
 #include "Client.hpp"
-#include "RequestHandler.hpp"
+#include "../http/MethodHandler.hpp"
+#include "../http/HttpRequest.hpp"
 #include "ServerConfig.hpp"
 
 class Server
@@ -31,7 +32,7 @@ private:
 	std::vector<pollfd>		_fds;
 	std::map<int, Client>	_clients;
 	ServerConfig			_config;
-	RequestHandler			_handler;
+	MethodHandler			_handler;
 
 public:
 	// Server(int port);

@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 22:09:53 by sdossa            #+#    #+#             */
-/*   Updated: 2026/07/27 00:42:55 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/07/28 16:42:24 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,7 @@
 class HttpRequest
 {
 public:
-	bool parseRequest(const std::string& raw);
+	bool parse(const std::string& raw);
 
 	const std::string& getMethod()  const { return _method; } //GET
 	const std::string& getUri()     const { return _uri; } //index.html

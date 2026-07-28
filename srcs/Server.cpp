@@ -3,17 +3,18 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
+/*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:33:43 by tcali             #+#    #+#             */
-/*   Updated: 2026/07/20 15:44:07 by tcali            ###   ########.fr       */
+/*   Updated: 2026/07/28 18:40:38 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Server.hpp"
 #include "Utils.hpp"
 #include "Client.hpp"
-#include "HttpRequest.hpp"
+#include "../http/MethodHandler.hpp"
+#include "../http/HttpRequest.hpp"
 #include <unistd.h>
 #include <netinet/in.h>
 #include <string>
@@ -147,12 +148,12 @@ void	Server::handleClientRead(Client& client)
 	request.parse(rawRequest);
 
     std::cout << "Method: " << request.getMethod() << std::endl;
-    std::cout << "Path: " << request.getPath() << std::endl;
+    std::cout << "Path: " << request.getUri() << std::endl;
     std::cout << "Version: " << request.getVersion() << std::endl;
 
 	HttpResponse	response = _handler.handle(request);
 
-	std::string rawResponse = response.toString();
+	std::string rawResponse = response.serialize();
 
 	send(client.getFd(), rawResponse.c_str(), rawResponse.size(), 0);
 

@@ -3,14 +3,16 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
+/*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/22 14:50:12 by tcali             #+#    #+#             */
-/*   Updated: 2026/07/20 15:47:31 by tcali            ###   ########.fr       */
+/*   Updated: 2026/07/28 16:35:51 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Server.hpp"
+#include "../http/MethodHandler.hpp"
+#include "../http/HttpRequest.hpp"
 
 int main()
 {

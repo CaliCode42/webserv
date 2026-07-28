@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: tcali <tcali@student.42.fr>                +#+  +:+       +#+         #
+#    By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/06/22 14:54:39 by tcali             #+#    #+#              #
-#    Updated: 2026/07/20 15:41:52 by tcali            ###   ########.fr        #
+#    Updated: 2026/07/28 19:07:26 by sdossa           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -17,25 +17,27 @@ CFLAGS=-Wall -Wextra -Werror -std=c++98
 
 OBJ_DIR=obj
 SRC_DIR=srcs
-INCLUDES=-I./includes
+HTTP_DIR=http
+INCLUDES=-I./includes -I./http
 
 SRC=\
 	$(SRC_DIR)/main.cpp\
 	$(SRC_DIR)/Server.cpp\
 	$(SRC_DIR)/Client.cpp\
-	$(SRC_DIR)/HttpRequest.cpp\
-	$(SRC_DIR)/HttpResponse.cpp\
-	$(SRC_DIR)/RequestHandler.cpp\
 	$(SRC_DIR)/ServerConfig.cpp\
+	$(HTTP_DIR)/HttpRequest.cpp\
+	$(HTTP_DIR)/HttpResponse.cpp\
+	$(HTTP_DIR)/MethodHandler.cpp\
 
-OBJ=$(SRC:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
+OBJ=$(SRC:%.cpp=$(OBJ_DIR)/%.o)
 
 all: $(NAME)
 
 $(OBJ_DIR):
 	@mkdir -p $@
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp | $(OBJ_DIR)
+$(OBJ_DIR)/%.o: %.cpp | $(OBJ_DIR)
+	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 $(NAME): $(OBJ) Makefile

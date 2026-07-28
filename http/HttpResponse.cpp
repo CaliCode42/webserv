@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 23:52:39 by sdossa            #+#    #+#             */
-/*   Updated: 2026/07/27 03:36:26 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/07/28 19:09:21 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,10 +21,10 @@ void HttpResponse::setStatus(int code) { _status = code; }
 void HttpResponse::setBody(const std::string& body, const std::string& contentType)
 {
     _body = body;
-    addHeader("Content-Type", contentType);
+    setHeader("Content-Type", contentType);
 }
 
-void HttpResponse::addHeader(const std::string& key, const std::string&  value)
+void HttpResponse::setHeader(const std::string& key, const std::string&  value)
 {
     _headers.push_back(std::make_pair(key, value));
 }
