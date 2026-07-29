@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:40:20 by tcali             #+#    #+#             */
-/*   Updated: 2026/07/06 17:31:13 by tcali            ###   ########.fr       */
+/*   Updated: 2026/07/29 19:20:58 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,37 +48,61 @@ int			Client::getFd() const
 	return (_fd);
 }
 
-const std::string&	Client::getBuffer()
+const std::string&	Client::getReadBuffer() const
 {
-	return (_buffer);
+	return (_readBuffer);
 }
 
-void		Client::appendToBuffer(const std::string &data)
+const std::string&	Client::getWriteBuffer() const
 {
-	_buffer += data;
+	return (_writeBuffer);
 }
 
-void		Client::clearBuffer()
+void		Client::appendToReadBuffer(const std::string &data)
 {
-	_buffer.clear();
+	_readBuffer += data;
 }
+
+void		Client::appendToWriteBuffer(const std::string &data)
+{
+	_writeBuffer += data;
+}
+
+bool Client::hasPendingWriteData() const
+{
+    return (!_writeBuffer.empty());
+}
+
+void Client::removeSentBytes(std::size_t count)
+{
+    if (count >= _writeBuffer.size())
+        _writeBuffer.clear();
+    else
+        _writeBuffer.erase(0, count);
+}
+
+void Client::setRequest(const HttpRequest& request)
+{
+    _request = request;
+}
+
 // hasCompleteRequest et extractRequest ne gèrent pour l'instant que les requêtes GET,
 // il faudra les mettre à jour pour gérer les requêtes POST.
 bool			Client::hasCompleteRequest() const
 {
-	return (_buffer.find("\r\n\r\n") != std::string::npos);
+	return (_readBuffer.find("\r\n\r\n") != std::string::npos);
 }
 
 std::string		Client::extractRequest()
 {
-	size_t	end = _buffer.find("\r\n\r\n");
+	size_t	end = _readBuffer.find("\r\n\r\n");
 
     if (end == std::string::npos)
         return ("");
 
-    std::string	request = _buffer.substr(0, end + 4);
+    std::string	request = _readBuffer.substr(0, end + 4);
 
-    _buffer.erase(0, end + 4);
+    _readBuffer.erase(0, end + 4);
 
     return (request);
 }

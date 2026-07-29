@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
+/*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:33:43 by tcali             #+#    #+#             */
-/*   Updated: 2026/07/28 18:40:38 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/07/29 19:39:30 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,7 @@
 #include <unistd.h>
 #include <netinet/in.h>
 #include <string>
+#include <cerrno>
 
 // Server::Server(int port): _port(port), _serverSocket(-1) 
 // {
@@ -90,18 +91,37 @@ void	Server::run()
 {
 	while (true)
 	{
-		if (poll(_fds.data(), _fds.size(), -1) < 0)
+		if (poll(&_fds[0], _fds.size(), -1) < 0)
 			continue;
 
 		for (size_t i = 0; i < _fds.size(); i++)
 		{
-			if (!(_fds[i].revents & POLLIN))
-				continue;
+			int		fd = _fds[i].fd;
+			short	revents = _fds[i].revents;
 
-			if (_fds[i].fd == _serverSocket)
-				acceptClient();
-			else
-				handleClientRead(_clients[_fds[i].fd]);
+			if (revents == 0)
+                continue;
+
+			if (fd == _serverSocket)
+			{
+				if (revents & POLLIN)
+					acceptClient();
+
+				continue ;
+			}
+			
+			if (revents & POLLIN)
+			{
+				std::map<int, Client>::iterator it = _clients.find(fd);
+
+				if (it != _clients.end())
+					handleClientRead(it->second);
+			}
+
+			std::map<int, Client>::iterator it = _clients.find(fd);
+
+            if ((revents & POLLOUT) && it != _clients.end())
+                handleClientWrite(it->second);
 		}
 	}
 }
@@ -131,13 +151,22 @@ void	Server::handleClientRead(Client& client)
 
 	int bytes = recv(client.getFd(), buffer, sizeof(buffer) - 1, 0);
 
-	if (bytes <= 0)
+	if (bytes == 0)
 	{
-		Server::removeClient(client.getFd());
+		removeClient(client.getFd());
 		return ;
 	}
 
-	client.appendToBuffer(std::string(buffer, bytes));
+	if (bytes < 0)
+	{
+		if (errno == EAGAIN ||errno == EWOULDBLOCK)
+			return ;
+		
+		removeClient(client.getFd());
+		return ;
+	}
+
+	client.appendToReadBuffer(std::string(buffer, bytes));
 
 	if (!client.hasCompleteRequest())
         return;
@@ -155,13 +184,65 @@ void	Server::handleClientRead(Client& client)
 
 	std::string rawResponse = response.serialize();
 
-	send(client.getFd(), rawResponse.c_str(), rawResponse.size(), 0);
-
-	std::cout << "Response sent to fd: " << client.getFd() << std::endl;
+	std::cout << "Append response to client's _writeBuffer: " << client.getFd() << std::endl;
 	
-	removeClient(client.getFd());
+	client.appendToWriteBuffer(rawResponse);
+	enableClientWrite(client.getFd());
+}
 
-	response.setHeader("Connection", "close");
+void Server::handleClientWrite(Client& client)
+{
+    const std::string&	data = client.getWriteBuffer();
+
+    if (data.empty())
+        return ;
+
+    ssize_t	bytesSent = send(client.getFd(), data.c_str(), data.size(), 0);
+
+	if (bytesSent < 0)
+	{
+		if (errno == EAGAIN || errno == EWOULDBLOCK)
+		return ;
+		
+		removeClient(client.getFd());
+	}
+	else if (bytesSent > 0)
+	{
+		client.removeSentBytes(static_cast<std::size_t>(bytesSent));
+	}
+	else // bytesSent == 0
+		return ;
+
+	if (!client.hasPendingWriteData())
+    {
+        int fd = client.getFd();
+        disableClientWrite(fd);
+        removeClient(fd);
+    }
+}
+
+void	Server::enableClientWrite(int fd)
+{
+    for (std::size_t i = 0; i < _fds.size(); ++i)
+    {
+        if (_fds[i].fd == fd)
+        {
+            _fds[i].events |= POLLOUT;
+            return ;
+        }
+    }
+}
+
+void	Server::disableClientWrite(int fd)
+{
+    for (std::size_t i = 0; i < _fds.size(); ++i)
+    {
+        if (_fds[i].fd == fd)
+        {
+            _fds[i].events &= ~POLLOUT;
+            return ;
+        }
+    }
 }
 
 void	Server::removeClient(int fd)

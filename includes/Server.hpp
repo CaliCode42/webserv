@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
+/*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:16:04 by tcali             #+#    #+#             */
-/*   Updated: 2026/07/28 16:37:17 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/07/29 17:19:19 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,6 +48,10 @@ public:
 	void	acceptClient();
 
 	void	handleClientRead(Client& client);
+	void	handleClientWrite(Client& client);
+
+	void	enableClientWrite(int fd);
+	void	disableClientWrite(int fd);
 
 	void	removeClient(int fd);
 };
