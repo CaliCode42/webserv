@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:33:43 by tcali             #+#    #+#             */
-/*   Updated: 2026/07/29 19:39:30 by tcali            ###   ########.fr       */
+/*   Updated: 2026/07/31 16:29:02 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,7 @@
 #include <unistd.h>
 #include <netinet/in.h>
 #include <string>
+#include <cstring>
 #include <cerrno>
 
 // Server::Server(int port): _port(port), _serverSocket(-1) 
@@ -31,30 +32,14 @@ Server::Server(int port, const ServerConfig& config): _port(port), _serverSocket
 	std::cout << "[Server] constructor called: server created" << std::endl;
 }
 
-// Server::Server(const Server& other)
-// {
-// 	std::cout << "[Server] Copy constructor called" << std::endl;
-// 	*this = other;
-// }
-
-// Server& Server::operator=(const Server& other)
-// {
-// 	if (this != &other)
-// 	{
-// 		// copy attributes here
-// 	}
-// 	std::cout << "[Server] Copy assignment operator called" << std::endl;
-// 	return (*this);
-// }
-
 Server::~Server()
 {
 	std::cout << "[Server] Destructor called" << std::endl;
 	for (std::vector<pollfd>::iterator it = _fds.begin();
 		it != _fds.end(); ++it)
-{
-	close(it->fd);
-};
+	{
+		close(it->fd);
+	}
 }
 
 void	Server::initSocket()
@@ -64,20 +49,43 @@ void	Server::initSocket()
 		throw std::runtime_error("failed to init socket.");
 
 	sockaddr_in addr;
+	std::memset(&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(_port);
 	addr.sin_addr.s_addr = INADDR_ANY;
 
-	if (bind(_serverSocket, (sockaddr*)&addr, sizeof(addr)) == -1)
+	int opt = 1;
+
+	if (setsockopt(_serverSocket, SOL_SOCKET, SO_REUSEADDR,
+		&opt, sizeof(opt)) == -1)
 	{
+		close(_serverSocket);
+		_serverSocket = -1;
+		throw std::runtime_error("failed to set SO_REUSEADDR");
+	}
+
+	if (bind(_serverSocket, reinterpret_cast<sockaddr*>(&addr),
+		sizeof(addr)) == -1)
+	{
+		close(_serverSocket);
+		_serverSocket = -1;
 		throw std::runtime_error("failed to bind socket.");
 	}
 
 	if (listen(_serverSocket, 10) == -1)
 	{
+		close(_serverSocket);
+		_serverSocket = -1;
 		throw std::runtime_error("socket failed to listen.");
 	}
 
+	if (!setNonBlocking(_serverSocket))
+	{
+		close(_serverSocket);
+		_serverSocket = -1;
+		throw std::runtime_error("failed to set server socket as non-blocking");
+	}
+	
 	pollfd	pfd;
 
 	pfd.fd = _serverSocket;
@@ -91,8 +99,14 @@ void	Server::run()
 {
 	while (true)
 	{
-		if (poll(&_fds[0], _fds.size(), -1) < 0)
-			continue;
+		int result = poll(&_fds[0], static_cast<nfds_t>(_fds.size()), -1);
+		if (result < 0)
+		{
+			if (errno == EINTR)
+				continue ;
+
+			throw (std::runtime_error("poll failed"));
+		}
 
 		for (size_t i = 0; i < _fds.size(); i++)
 		{
@@ -100,16 +114,25 @@ void	Server::run()
 			short	revents = _fds[i].revents;
 
 			if (revents == 0)
-                continue;
+				continue ;
 
 			if (fd == _serverSocket)
 			{
+				if (revents & (POLLERR | POLLHUP | POLLNVAL))
+					throw std::runtime_error("server socket poll error");
+
 				if (revents & POLLIN)
 					acceptClient();
 
 				continue ;
 			}
-			
+
+			if (revents & (POLLERR | POLLNVAL))
+			{
+				markClientForRemoval(fd);
+				continue ;
+			}
+
 			if (revents & POLLIN)
 			{
 				std::map<int, Client>::iterator it = _clients.find(fd);
@@ -118,131 +141,209 @@ void	Server::run()
 					handleClientRead(it->second);
 			}
 
-			std::map<int, Client>::iterator it = _clients.find(fd);
+			std::map<int, Client>::iterator	it = _clients.find(fd);
+			
+			if ((revents & POLLHUP) && !isMarkedForRemoval(fd))
+			{
 
-            if ((revents & POLLOUT) && it != _clients.end())
-                handleClientWrite(it->second);
+				if (it == _clients.end() || !it->second.hasPendingWriteData())
+				{
+					markClientForRemoval(fd);
+					continue;
+				}
+			}
+
+			if ((revents & POLLOUT) && it != _clients.end() && !isMarkedForRemoval(fd))
+				handleClientWrite(it->second);
 		}
+		removeMarkedClients();
 	}
 }
 
 void	Server::acceptClient()
 {
-	int client_fd = accept(_serverSocket, NULL, NULL);
-	if (client_fd == -1)
-		return ;
+	while (true)
+	{
+		int clientFd = accept(_serverSocket, NULL, NULL);
 
-	pollfd	client;
-	
-	client.fd = client_fd;
-	client.events = POLLIN;
-	client.revents = 0;
+		if (clientFd < 0)
+		{
+			if (errno == EAGAIN || errno == EWOULDBLOCK)
+				return ;
 
-	_fds.push_back(client);
-	_clients[client_fd] = Client(client_fd);
+			if (errno == EINTR)
+				continue ;
+			
+			std::cerr << "accept() failed: " << strerror(errno) << std::endl;
+			return ;
+		}
 
-	std::cout << "Client connected: " << client_fd << std::endl;
+		if (!setNonBlocking(clientFd))
+		{
+			close(clientFd);
+			continue ;
+		}
+		pollfd	client;
+		
+		client.fd = clientFd;
+		client.events = POLLIN;
+		client.revents = 0;
+
+		_fds.push_back(client);
+		_clients.insert(std::make_pair(clientFd, Client(clientFd)));
+
+		std::cout << "Client connected: " << clientFd << std::endl;
+	}
 }
-
 
 void	Server::handleClientRead(Client& client)
 {
 	char buffer[4096];
 
-	int bytes = recv(client.getFd(), buffer, sizeof(buffer) - 1, 0);
+	ssize_t	bytes = recv(client.getFd(), buffer, sizeof(buffer), 0);
 
 	if (bytes == 0)
 	{
-		removeClient(client.getFd());
+		markClientForRemoval(client.getFd());
 		return ;
 	}
 
 	if (bytes < 0)
 	{
-		if (errno == EAGAIN ||errno == EWOULDBLOCK)
+		if (errno == EAGAIN || errno == EINTR || errno == EWOULDBLOCK)
 			return ;
 		
-		removeClient(client.getFd());
+		markClientForRemoval(client.getFd());
 		return ;
 	}
 
 	client.appendToReadBuffer(std::string(buffer, bytes));
 
 	if (!client.hasCompleteRequest())
-        return;
+		return;
 
 	std::string rawRequest = client.extractRequest();
 
-    HttpRequest request;
-	request.parse(rawRequest);
+	try {
+		HttpRequest request;
+		request.parse(rawRequest);
 
-    std::cout << "Method: " << request.getMethod() << std::endl;
-    std::cout << "Path: " << request.getUri() << std::endl;
-    std::cout << "Version: " << request.getVersion() << std::endl;
+		std::cout << "Method: " << request.getMethod() << std::endl;
+		std::cout << "Path: " << request.getUri() << std::endl;
+		std::cout << "Version: " << request.getVersion() << std::endl;
 
-	HttpResponse	response = _handler.handle(request);
+		HttpResponse	response = _handler.handle(request);
 
-	std::string rawResponse = response.serialize();
+		std::string rawResponse = response.serialize();
 
-	std::cout << "Append response to client's _writeBuffer: " << client.getFd() << std::endl;
-	
-	client.appendToWriteBuffer(rawResponse);
-	enableClientWrite(client.getFd());
+		std::cout << "Append response to client's _writeBuffer: " << client.getFd() << std::endl;
+		
+		client.appendToWriteBuffer(rawResponse);
+		enableClientWrite(client.getFd());
+	}
+	catch (const std::exception& e)
+	{
+		// temporary, just to remove warnings
+		std::cerr << "HTTP processing failed for client "
+              << client.getFd()
+              << ": "
+              << e.what()
+              << std::endl;
+
+		// Build 400 or 500 http response
+		markClientForRemoval(client.getFd());
+	}
 }
 
 void Server::handleClientWrite(Client& client)
 {
-    const std::string&	data = client.getWriteBuffer();
+	const std::string&	data = client.getWriteBuffer();
 
-    if (data.empty())
-        return ;
+	if (data.empty())
+	{
+		markClientForRemoval(client.getFd());
+		return ;
+	}
 
-    ssize_t	bytesSent = send(client.getFd(), data.c_str(), data.size(), 0);
+	ssize_t	bytesSent = send(client.getFd(), data.c_str(), data.size(), MSG_NOSIGNAL);
 
 	if (bytesSent < 0)
 	{
-		if (errno == EAGAIN || errno == EWOULDBLOCK)
-		return ;
+		if (errno == EAGAIN || errno == EINTR || errno == EWOULDBLOCK)
+			return ;
 		
-		removeClient(client.getFd());
+		markClientForRemoval(client.getFd());
+		return ;
 	}
 	else if (bytesSent > 0)
 	{
 		client.removeSentBytes(static_cast<std::size_t>(bytesSent));
 	}
 	else // bytesSent == 0
+	{
+		markClientForRemoval(client.getFd());
 		return ;
+	}
 
 	if (!client.hasPendingWriteData())
-    {
-        int fd = client.getFd();
-        disableClientWrite(fd);
-        removeClient(fd);
-    }
+	{
+		int fd = client.getFd();
+		disableClientWrite(fd);
+		markClientForRemoval(fd);
+	}
 }
 
 void	Server::enableClientWrite(int fd)
 {
-    for (std::size_t i = 0; i < _fds.size(); ++i)
-    {
-        if (_fds[i].fd == fd)
-        {
-            _fds[i].events |= POLLOUT;
-            return ;
-        }
-    }
+	for (std::size_t i = 0; i < _fds.size(); ++i)
+	{
+		if (_fds[i].fd == fd)
+		{
+			_fds[i].events = POLLOUT;
+			return ;
+		}
+	}
 }
 
 void	Server::disableClientWrite(int fd)
 {
-    for (std::size_t i = 0; i < _fds.size(); ++i)
-    {
-        if (_fds[i].fd == fd)
-        {
-            _fds[i].events &= ~POLLOUT;
-            return ;
-        }
-    }
+	for (std::size_t i = 0; i < _fds.size(); ++i)
+	{
+		if (_fds[i].fd == fd)
+		{
+			_fds[i].events &= ~POLLOUT;
+			return ;
+		}
+	}
+}
+
+void	Server::markClientForRemoval(int fd)
+{
+	if (!isMarkedForRemoval(fd))
+		_clientsToRemove.push_back(fd);
+}
+
+bool Server::isMarkedForRemoval(int fd) const
+{
+	for (std::vector<int>::const_iterator it = _clientsToRemove.begin();
+		 it != _clientsToRemove.end();
+		 ++it)
+	{
+		if (*it == fd)
+			return true;
+	}
+
+	return false;
+}
+
+void Server::removeMarkedClients()
+{
+	for (std::vector<int>::const_iterator it = _clientsToRemove.begin();
+		 it != _clientsToRemove.end();
+		 ++it)
+		removeClient(*it);
+
+	_clientsToRemove.clear();
 }
 
 void	Server::removeClient(int fd)
@@ -252,12 +353,31 @@ void	Server::removeClient(int fd)
 	_clients.erase(fd);
 
 	for (std::vector<pollfd>::iterator it = _fds.begin();
-        	it != _fds.end(); ++it)
+			it != _fds.end(); ++it)
+	{
+		if (it->fd == fd)
+		{
+			_fds.erase(it);
+			break;
+		}
+	}
+}
+
+bool	setNonBlocking(int fd)
+{
+	int flags = fcntl(fd, F_GETFL, 0);
+
+	if (flags == -1)
+	{
+		throw std::runtime_error("fcntl(F_GETFL) failed");
+		return (false);
+	}
+
+	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
     {
-        if (it->fd == fd)
-        {
-            _fds.erase(it);
-            break;
-        }
-    }
+		throw std::runtime_error("fcntl(F_SETFL) failed");
+		return (false);
+	}
+	return (true);
+		
 }

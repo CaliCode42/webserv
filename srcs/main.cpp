@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
+/*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/22 14:50:12 by tcali             #+#    #+#             */
-/*   Updated: 2026/07/28 16:35:51 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/07/31 16:26:33 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,13 @@ int main()
 {
 	ServerConfig	config;
     Server			server(8080, config);
-    server.initSocket();
-    server.run();
-    return 0;
+    try {
+		server.initSocket();
+    	server.run();
+	}
+	catch (std::runtime_error&	e)
+	{
+		std::cerr << e.what();
+	}
+    return (0);
 }
