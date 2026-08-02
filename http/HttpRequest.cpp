@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 22:09:59 by sdossa            #+#    #+#             */
-/*   Updated: 2026/07/29 19:25:29 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/02 15:07:07 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,7 +35,7 @@ bool HttpRequest::parse(const std::string& raw)
 	if (iss >> extra)
 		return false;
 	
-	if (_method != "GET")
+	if (_method != "GET" && _method != "POST" && _method != "DELETE")
 		return false;
 
 	std::string::size_type pos = eol + 2; //saute 1er \r\n
