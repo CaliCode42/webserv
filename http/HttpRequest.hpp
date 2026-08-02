@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 22:09:53 by sdossa            #+#    #+#             */
-/*   Updated: 2026/07/28 16:42:24 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/07/29 04:38:23 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,6 +37,7 @@ private:
 	std::string _body;
 	
 	static std::string toLower(const std::string& s);
+	static std::string trim(const std::string& s);
 
 };
 
