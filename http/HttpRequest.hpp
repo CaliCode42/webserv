@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 22:09:53 by sdossa            #+#    #+#             */
-/*   Updated: 2026/07/29 04:38:23 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/04 16:03:18 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,23 @@
 class HttpRequest
 {
 public:
-	bool parse(const std::string& raw);
+	enum State
+	{
+		
+		STATE_REQUEST_LINE,
+		STATE_HEADERS,
+		STATE_COMPLETE,
+		STATE_ERROR,
+	};
+	
+	HttpRequest();
+	
+	void appendData(const char* data, size_t len);
+	
+	bool isComplete() const { return _state == STATE_COMPLETE; }
+	bool hasError() const { return _state == STATE_ERROR; }
+	int errorCode() const { return _errorCode; }
+	//bool parseRequestLine(const std::string& raw);
 
 	const std::string& getMethod()  const { return _method; } //GET
 	const std::string& getUri()     const { return _uri; } //index.html
@@ -30,11 +46,21 @@ public:
 	const std::map<std::string, std::string>& getHeaders() const { return _headers; }
 
 private:
-	std::string _method;
-	std::string _uri;
-	std::string _version;
-	std::map<std::string, std::string> _headers;
-	std::string _body;
+	State	_state;
+	int		_errorCode;
+
+	std::string	_buffer;
+	std::string	_method;
+	std::string	_uri;
+	std::string	_version;
+	std::map<std::string, std::string>	_headers;
+	std::string	_body;
+	
+	void setError(int code);
+	
+	bool parseRequestLine();
+	bool parseHeaders();
+
 	
 	static std::string toLower(const std::string& s);
 	static std::string trim(const std::string& s);
