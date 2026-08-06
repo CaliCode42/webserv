@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 22:09:59 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/05 09:46:28 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/06 14:51:05 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,8 @@
 #include <sstream>
 
 HttpRequest::HttpRequest()
-	: _state(STATE_REQUEST_LINE), _errorCode(0) 
+	: _state(STATE_REQUEST_LINE), _errorCode(0), _contentLength(0), _chunkSize(0)
+		
 {}
 
 
@@ -37,6 +38,12 @@ void HttpRequest::appendData(const char* data, size_t len)
 			case STATE_REQUEST_LINE: progress = parseRequestLine();
 				break;
 			case STATE_HEADERS: progress = parseHeaders();
+				break;
+			case STATE_BODY: progress = parseBody();
+				break;
+			case STATE_CHUNK_DATA: progress = parseChunkData();
+				break;
+			case STATE_CHUNK_SIZE: progress = parseChunkSize();
 				break;
 			default: progress = false;
 				break;
@@ -80,7 +87,6 @@ bool HttpRequest::parseRequestLine()
 
 
 // "Host: localhost\r\n" ... "\r\n"
-
 bool HttpRequest::parseHeaders()
 {
 	while (true)
@@ -98,7 +104,7 @@ bool HttpRequest::parseHeaders()
 
 		if (line.empty()) // ligne vide dc fin headers ^^
 		{
-			_state = STATE_COMPLETE; // CHECK
+			onHeadersComplete();
 			return true;
 		}
 
@@ -115,7 +121,97 @@ bool HttpRequest::parseHeaders()
 	}
 }
 
+//Transfer-Encoding: Chunked wins vs Content-length ^^
+void HttpRequest::onHeadersComplete()
+{
+	//T-E CHUNKED
+	std::string transferEncoding = getHeader("Transfer-Encoding");
+	if (transferEncoding == "chunked")
+	{
+		_state = STATE_CHUNK_SIZE;
+		return;
+	}
 
+	//Content-Length
+	std::string contentLengthStr = getHeader("Content-Length");
+		if (contentLengthStr.empty())
+		{
+			_state = STATE_COMPLETE;
+			return;
+		}
+		std::istringstream iss(contentLengthStr);
+		iss >> _contentLength;
+		_state = STATE_BODY;
+}
+
+// Sized body: wait til _contentLength bytes are buffered
+bool HttpRequest::parseBody()
+{
+	if (_buffer.size() < _contentLength)
+	{
+		//pas assez d'octets, on attend
+		return false;
+	}
+	//si assez, on copie
+	_body = _buffer.substr(0, _contentLength);
+	_buffer.erase(0, _contentLength);
+	_state = STATE_COMPLETE;
+	return true;
+	
+}
+
+// Chunked body 
+// "1a\r\n" <26 bytes> "\r\n" "0\r\n" "\r\n"
+bool HttpRequest::parseChunkSize()
+{
+	std::string::size_type eol = _buffer.find("\r\n");
+	if (eol == std::string::npos)
+		return false;
+	
+	std::string line = _buffer.substr(0, eol);
+	
+	//if last chunk ="0", need the next 2 octets "\r\n"
+	if (line == "0")
+	{
+		//need "0\r\n\r\n" = 5 octets minimum
+		if (_buffer.size() < 5)
+			return false;
+		//check final \r\n
+		if (_buffer.substr(3, 2) != "\r\n")
+			return false;
+		_buffer.erase(0, 5);
+		_chunkSize = 0;
+		_state = STATE_COMPLETE;
+		return true;
+	}
+
+	//extraire line, convertir en hexa
+	_buffer.erase(0, eol + 2);
+	std::istringstream iss(line);
+	iss >> std::hex >> _chunkSize;
+	if(iss.fail())
+	{
+		setError(400);
+		return false;
+	}
+	
+	_state = STATE_CHUNK_DATA;
+	return true;
+}
+
+
+bool HttpRequest::parseChunkData()
+{
+	//si buffer trop court, return false
+	if (_buffer.size() < _chunkSize + 2)
+		return false;
+	_body.append(_buffer, 0, _chunkSize);
+	_buffer.erase(0, _chunkSize + 2);
+	_state = STATE_CHUNK_SIZE;
+	return true;
+	
+
+}
 
 // GETTERS AND HELPERS
 std::string HttpRequest::getHeader(const std::string& key) const 

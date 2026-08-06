@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 22:09:53 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/04 16:03:18 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/06 00:09:32 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,6 +25,9 @@ public:
 		
 		STATE_REQUEST_LINE,
 		STATE_HEADERS,
+		STATE_BODY,
+		STATE_CHUNK_DATA,
+		STATE_CHUNK_SIZE,
 		STATE_COMPLETE,
 		STATE_ERROR,
 	};
@@ -32,6 +35,7 @@ public:
 	HttpRequest();
 	
 	void appendData(const char* data, size_t len);
+
 	
 	bool isComplete() const { return _state == STATE_COMPLETE; }
 	bool hasError() const { return _state == STATE_ERROR; }
@@ -41,6 +45,7 @@ public:
 	const std::string& getMethod()  const { return _method; } //GET
 	const std::string& getUri()     const { return _uri; } //index.html
 	const std::string& getVersion() const { return _version; } //HTTP/1.1
+	const std::string& getBody() const { return _body; } 
 	
 	std::string getHeader(const std::string& key) const;
 	const std::map<std::string, std::string>& getHeaders() const { return _headers; }
@@ -56,10 +61,18 @@ private:
 	std::map<std::string, std::string>	_headers;
 	std::string	_body;
 	
+	size_t _contentLength; // parsed when header are done;
+	size_t _chunkSize; //
+	
 	void setError(int code);
+	void onHeadersComplete(); // choice = no body? sized body? chunked?
+
 	
 	bool parseRequestLine();
 	bool parseHeaders();
+	bool parseBody();
+	bool parseChunkSize();
+	bool parseChunkData();
 
 	
 	static std::string toLower(const std::string& s);
