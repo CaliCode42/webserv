@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:16:17 by tcali             #+#    #+#             */
-/*   Updated: 2026/07/29 17:03:04 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/11 16:41:11 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,6 +41,8 @@ public:
 	const std::string&	getReadBuffer()const;
 
 	const std::string&	getWriteBuffer()const;
+
+	HttpRequest&		getRequest();
 	
 	void				appendToReadBuffer(const std::string &data);
 	

@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:40:20 by tcali             #+#    #+#             */
-/*   Updated: 2026/07/29 19:20:58 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/11 16:42:13 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -57,6 +57,12 @@ const std::string&	Client::getWriteBuffer() const
 {
 	return (_writeBuffer);
 }
+
+HttpRequest&		Client::getRequest()
+{
+	return (_request);
+}
+
 
 void		Client::appendToReadBuffer(const std::string &data)
 {

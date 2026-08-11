@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:33:43 by tcali             #+#    #+#             */
-/*   Updated: 2026/07/31 16:29:02 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/11 17:06:31 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -217,28 +217,39 @@ void	Server::handleClientRead(Client& client)
 		return ;
 	}
 
-	client.appendToReadBuffer(std::string(buffer, bytes));
+	// client.appendToReadBuffer(std::string(buffer, bytes));
 
-	if (!client.hasCompleteRequest())
-		return;
+	// if (!client.hasCompleteRequest())
+	// 	return;
 
-	std::string rawRequest = client.extractRequest();
+	// std::string rawRequest = client.extractRequest();
+	HttpRequest& request = client.getRequest();
+
+	request.appendData(buffer, static_cast<std::size_t>(bytes));
+
+	 if (request.hasError())
+    {
+        // temporary :
+        // Later build corresponding HTTP response
+        markClientForRemoval(client.getFd());
+        return ;
+    }
+
+    if (!request.isComplete())
+	{
+        return ;
+	}
 
 	try {
-		HttpRequest request;
-		request.parse(rawRequest);
-
 		std::cout << "Method: " << request.getMethod() << std::endl;
 		std::cout << "Path: " << request.getUri() << std::endl;
 		std::cout << "Version: " << request.getVersion() << std::endl;
 
 		HttpResponse	response = _handler.handle(request);
 
-		std::string rawResponse = response.serialize();
-
 		std::cout << "Append response to client's _writeBuffer: " << client.getFd() << std::endl;
 		
-		client.appendToWriteBuffer(rawResponse);
+		client.appendToWriteBuffer(response.serialize());
 		enableClientWrite(client.getFd());
 	}
 	catch (const std::exception& e)
