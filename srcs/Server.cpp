@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
+/*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:33:43 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/06 15:21:39 by tcali            ###   ########.fr       */
+/*   Updated: 2026/07/28 18:40:38 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -145,7 +145,7 @@ void	Server::handleClientRead(Client& client)
 	std::string rawRequest = client.extractRequest();
 
     HttpRequest request;
-	request.parseRequestLine(rawRequest);
+	request.parse(rawRequest);
 
     std::cout << "Method: " << request.getMethod() << std::endl;
     std::cout << "Path: " << request.getUri() << std::endl;
