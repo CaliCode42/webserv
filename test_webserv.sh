@@ -489,6 +489,18 @@ else
     skip "timeout command unavailable: oversized request line test skipped"
 fi
 
+print_title "18. Oversized headers"
+
+response=$(python3 -c 'print("GET / HTTP/1.1\r\nHost: localhost\r\nX-Large-Header: " + "A"*33000 + "\r\n\r\n", end="")' \
+    | nc -N localhost 8080)
+
+if echo "$response" | grep -q "HTTP/1.1 431 Request Header Fields Too Large"; then
+    pass "Oversized headers are rejected with HTTP 431"
+else
+    fail "Oversized headers did not return HTTP 431"
+    printf "$response"
+fi
+
 print_title "Summary"
 
 printf "${GREEN}PASS:${RESET} %d\n" "$PASS"

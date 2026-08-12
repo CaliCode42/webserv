@@ -3,18 +3,22 @@
 /*                                                        :::      ::::::::   */
 /*   HttpRequest.hpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
+/*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 22:09:53 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/06 00:09:32 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/12 18:15:22 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef HTTPREQUEST_HPP
-#define HTTPREQUEST_HPP
+# define HTTPREQUEST_HPP
 
-#include <string>
-#include <map>
+# ifndef MAX_BUFFER_SIZE
+#  define MAX_BUFFER_SIZE 32768
+# endif
+
+# include <string>
+# include <map>
 
 
 class HttpRequest

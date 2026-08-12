@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpRequest.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
+/*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 22:09:59 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/06 14:51:05 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/12 18:16:18 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -89,6 +89,12 @@ bool HttpRequest::parseRequestLine()
 // "Host: localhost\r\n" ... "\r\n"
 bool HttpRequest::parseHeaders()
 {
+	if (_buffer.size() > MAX_BUFFER_SIZE)
+	{
+		setError(431); // Header trop large 
+		return false;
+	}	
+
 	while (true)
 	{
 		std::string::size_type eol = _buffer.find("\r\n");

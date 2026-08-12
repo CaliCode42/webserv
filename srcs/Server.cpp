@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:33:43 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/12 17:33:58 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/12 18:11:07 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -196,6 +196,25 @@ void	Server::acceptClient()
 	}
 }
 
+// Temporary
+// Just to test Error handling,
+// Later this must not be the responsibility of Server.
+HttpResponse	Server::buildErrorResponse(int statusCode)
+{
+	HttpResponse response;
+
+	response.setStatus(statusCode);
+	response.setBody(
+		"<html><body><h1>" +
+		turnIntoString(statusCode) + " " +
+		HttpResponse::reasonPhrase(statusCode) +
+		"</h1></body></html>",
+		"text/html"
+	);
+
+	return (response);
+}
+
 void	Server::handleClientRead(Client& client)
 {
 	char buffer[4096];
@@ -228,17 +247,19 @@ void	Server::handleClientRead(Client& client)
 	request.appendData(buffer, static_cast<std::size_t>(bytes));
 
 	 if (request.hasError())
-    {
-        // temporary :
-        // Later build corresponding HTTP response
-		// and enableClientWrite(client.getFd())
-        markClientForRemoval(client.getFd());
-        return ;
-    }
-
-    if (!request.isComplete())
 	{
-        return ;
+		int	statusCode = request.errorCode();
+
+		HttpResponse	response = buildErrorResponse(statusCode);
+
+		client.appendToWriteBuffer(response.serialize());
+		enableClientWrite(client.getFd());
+		return ;
+	}
+
+	if (!request.isComplete())
+	{
+		return ;
 	}
 
 	try {
@@ -257,10 +278,10 @@ void	Server::handleClientRead(Client& client)
 	{
 		// temporary, just to remove warnings
 		std::cerr << "HTTP processing failed for client "
-              << client.getFd()
-              << ": "
-              << e.what()
-              << std::endl;
+			  << client.getFd()
+			  << ": "
+			  << e.what()
+			  << std::endl;
 
 		// Build 400 or 500 http response
 		markClientForRemoval(client.getFd());
@@ -386,7 +407,7 @@ bool	setNonBlocking(int fd)
 	}
 
 	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
-    {
+	{
 		throw std::runtime_error("fcntl(F_SETFL) failed");
 		return (false);
 	}

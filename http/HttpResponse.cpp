@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
+/*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 23:52:39 by sdossa            #+#    #+#             */
-/*   Updated: 2026/07/28 19:09:21 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/12 17:46:58 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -51,7 +51,10 @@ std::string HttpResponse::reasonPhrase(int code)
         case 201: return "Created";
         case 400: return "Bad Request";
         case 404: return "Not Found";
-        default:  return "Unknown";
+		case 414: return "URI Too Long";
+		case 431: return "Request Header Fields Too Large";
+        case 501: return "Not Implemented";
+		default:  return "Unknown";
         
     }
 }

@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:16:04 by tcali             #+#    #+#             */
-/*   Updated: 2026/07/31 16:28:54 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/12 17:56:19 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,6 +36,8 @@ private:
 	ServerConfig			_config;
 	MethodHandler			_handler;
 
+	HttpResponse	buildErrorResponse(int statusCode);
+
 public:
 	// Server(int port);
 	Server(int port, const ServerConfig& config);
@@ -43,22 +45,22 @@ public:
 	// Server& operator=(const Server& other);
 	~Server();
 
-	void	initSocket();
+	void			initSocket();
 
-	void	run();
+	void			run();
 
-	void	acceptClient();
+	void			acceptClient();
 
-	void	handleClientRead(Client& client);
-	void	handleClientWrite(Client& client);
+	void			handleClientRead(Client& client);
+	void			handleClientWrite(Client& client);
 
-	void	enableClientWrite(int fd);
-	void	disableClientWrite(int fd);
+	void			enableClientWrite(int fd);
+	void			disableClientWrite(int fd);
 
-	void	markClientForRemoval(int fd);
-	bool	isMarkedForRemoval(int fd)const;
-	void	removeMarkedClients();
-	void	removeClient(int fd);
+	void			markClientForRemoval(int fd);
+	bool			isMarkedForRemoval(int fd)const;
+	void			removeMarkedClients();
+	void			removeClient(int fd);
 };
 
 bool	setNonBlocking(int fd);
