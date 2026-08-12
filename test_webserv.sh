@@ -289,6 +289,174 @@ else
     skip "timeout command unavailable: disconnection test skipped"
 fi
 
+print_title "12. Client disconnect during large response"
+
+if [ -f "$BIGFILE_PATH" ] && command -v timeout >/dev/null 2>&1; then
+    (
+        printf 'GET /bigfile.bin HTTP/1.1\r\nHost: localhost\r\n\r\n'
+        sleep 0.05
+    ) | timeout 0.2 nc "$HOST" "$PORT" >/dev/null 2>&1 || true
+
+    sleep 0.2
+
+    if server_is_up; then
+        pass "Server remains alive after a client disconnects during a large response"
+    else
+        fail "Server stopped responding after a client disconnected during a large response"
+    fi
+else
+    skip "Large file or timeout command unavailable"
+fi
+
+print_title "13. Slow fragmented request"
+
+slow_response="${TMP_DIR}/slow_request.txt"
+
+(
+    printf 'GET '
+    sleep 0.2
+    printf '/ '
+    sleep 0.2
+    printf 'HTTP/1.1\r'
+    sleep 0.2
+    printf '\nHost: '
+    sleep 0.2
+    printf 'localhost'
+    sleep 0.2
+    printf '\r\n'
+    sleep 0.2
+    printf '\r\n'
+) | nc "$HOST" "$PORT" > "$slow_response"
+
+if grep -q '^HTTP/' "$slow_response"; then
+    pass "Slow fragmented request is parsed successfully"
+else
+    fail "Slow fragmented request did not produce an HTTP response"
+fi
+
+print_title "14. Many successive connections"
+
+TOTAL_REQUESTS=50
+success_count=0
+i=1
+
+while [ "$i" -le "$TOTAL_REQUESTS" ]; do
+    code="$(curl -sS \
+        --max-time 2 \
+        -o /dev/null \
+        -w "%{http_code}" \
+        "${BASE_URL}/" 2>/dev/null)"
+
+    if [ "$code" = "200" ]; then
+        success_count=$((success_count + 1))
+    fi
+
+    i=$((i + 1))
+done
+
+if [ "$success_count" -eq "$TOTAL_REQUESTS" ]; then
+    pass "Server handled ${TOTAL_REQUESTS} successive connections successfully"
+else
+    fail "Only ${success_count}/${TOTAL_REQUESTS} successive connections succeeded"
+fi
+
+print_title "15. Concurrent clients"
+
+CONCURRENT_CLIENTS=20
+pids=""
+i=1
+
+while [ "$i" -le "$CONCURRENT_CLIENTS" ]; do
+    output="${TMP_DIR}/concurrent_${i}.code"
+
+    (
+        curl -sS \
+            --max-time 5 \
+            -o /dev/null \
+            -w "%{http_code}" \
+            "${BASE_URL}/" \
+            > "$output" 2>/dev/null
+    ) &
+
+    pids="$pids $!"
+    i=$((i + 1))
+done
+
+for pid in $pids; do
+    wait "$pid" || true
+done
+
+success_count=0
+i=1
+
+while [ "$i" -le "$CONCURRENT_CLIENTS" ]; do
+    output="${TMP_DIR}/concurrent_${i}.code"
+
+    if [ -f "$output" ] && [ "$(cat "$output")" = "200" ]; then
+        success_count=$((success_count + 1))
+    fi
+
+    i=$((i + 1))
+done
+
+if [ "$success_count" -eq "$CONCURRENT_CLIENTS" ]; then
+    pass "All ${CONCURRENT_CLIENTS} concurrent clients received HTTP 200"
+else
+    fail "Only ${success_count}/${CONCURRENT_CLIENTS} concurrent clients received HTTP 200"
+fi
+
+if server_is_up; then
+    pass "Server remains responsive after concurrent client load"
+else
+    fail "Server stopped responding after concurrent client load"
+fi
+
+print_title "16. Concurrent large file downloads"
+
+if [ -f "$BIGFILE_PATH" ]; then
+    LARGE_CLIENTS=5
+    pids=""
+    i=1
+
+    while [ "$i" -le "$LARGE_CLIENTS" ]; do
+        output="${TMP_DIR}/bigfile_${i}.bin"
+
+        curl -sS \
+            --max-time 15 \
+            "${BASE_URL}/bigfile.bin" \
+            -o "$output" &
+
+        pids="$pids $!"
+        i=$((i + 1))
+    done
+
+    for pid in $pids; do
+        wait "$pid" || true
+    done
+
+    success_count=0
+    i=1
+
+    while [ "$i" -le "$LARGE_CLIENTS" ]; do
+        output="${TMP_DIR}/bigfile_${i}.bin"
+
+        if [ -f "$output" ] \
+            && cmp "$BIGFILE_PATH" "$output" >/dev/null 2>&1; then
+            success_count=$((success_count + 1))
+        fi
+
+        i=$((i + 1))
+    done
+
+    if [ "$success_count" -eq "$LARGE_CLIENTS" ]; then
+        pass "All ${LARGE_CLIENTS} concurrent large file downloads are identical to the source"
+    else
+        fail "Only ${success_count}/${LARGE_CLIENTS} concurrent large file downloads are correct"
+    fi
+else
+    skip "${BIGFILE_PATH} not found"
+fi
+
 print_title "Summary"
 
 printf "${GREEN}PASS:${RESET} %d\n" "$PASS"
