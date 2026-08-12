@@ -457,6 +457,38 @@ else
     skip "${BIGFILE_PATH} not found"
 fi
 
+print_title "17. Oversized request line"
+
+if command -v timeout >/dev/null 2>&1; then
+    oversized_response="${TMP_DIR}/oversized_request_line.txt"
+
+    {
+        printf 'GET /'
+
+        i=0
+        while [ "$i" -lt 9000 ]; do
+            printf 'a'
+            i=$((i + 1))
+        done
+    } | timeout 2 nc "$HOST" "$PORT" > "$oversized_response" 2>/dev/null || true
+
+    if grep -q '^HTTP/.* 414 ' "$oversized_response"; then
+        pass "Oversized request line is rejected with HTTP 414"
+    elif [ ! -s "$oversized_response" ]; then
+        skip "Oversized request line was sent, but HTTP 414 response generation is not integrated yet"
+    else
+        fail "Oversized request line produced an unexpected response"
+    fi
+
+    if server_is_up; then
+        pass "Server remains responsive after an oversized request line"
+    else
+        fail "Server stopped responding after an oversized request line"
+    fi
+else
+    skip "timeout command unavailable: oversized request line test skipped"
+fi
+
 print_title "Summary"
 
 printf "${GREEN}PASS:${RESET} %d\n" "$PASS"

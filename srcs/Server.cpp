@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:33:43 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/11 17:06:31 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/12 17:33:58 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -231,6 +231,7 @@ void	Server::handleClientRead(Client& client)
     {
         // temporary :
         // Later build corresponding HTTP response
+		// and enableClientWrite(client.getFd())
         markClientForRemoval(client.getFd());
         return ;
     }
