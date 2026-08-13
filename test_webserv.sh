@@ -704,6 +704,92 @@ else
     skip "timeout command unavailable: oversized headers test skipped"
 fi
 
+print_title "${TEST_NUMBER}. POST text file"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+status="$(
+    curl -sS -o /dev/null -w "%{http_code}" \
+        -X POST \
+        --data-binary "Hello Webserv 42" \
+        "${BASE_URL}/test_upload.txt" \
+        2>/dev/null
+)"
+
+if [ "$status" = "201" ]; then
+    pass "POST /test_upload.txt returns 201"
+else
+    fail "POST /test_upload.txt returns ${status} instead of 201"
+fi
+
+
+print_title "${TEST_NUMBER}. GET uploaded text file"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+status="$(http_status "${BASE_URL}/uploads/test_upload.txt")"
+
+if [ "$status" = "200" ]; then
+    pass "GET uploaded text file returns 200"
+else
+    fail "GET uploaded text file returns ${status} instead of 200"
+fi
+
+
+print_title "${TEST_NUMBER}. Uploaded text content"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+body="$(curl -sS "${BASE_URL}/uploads/test_upload.txt" 2>/dev/null)"
+
+if [ "$body" = "Hello Webserv 42" ]; then
+    pass "Uploaded text content is preserved"
+else
+    fail "Uploaded text content differs from original"
+fi
+
+
+print_title "${TEST_NUMBER}. DELETE uploaded file"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+status="$(
+    curl -sS -o /dev/null -w "%{http_code}" \
+        -X DELETE \
+        "${BASE_URL}/uploads/test_upload.txt" \
+        2>/dev/null
+)"
+
+if [ "$status" = "204" ]; then
+    pass "DELETE /uploads/test_upload.txt returns 204"
+else
+    fail "DELETE /uploads/test_upload.txt returns ${status} instead of 204"
+fi
+
+
+print_title "${TEST_NUMBER}. GET deleted file"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+status="$(http_status "${BASE_URL}/uploads/test_upload.txt")"
+
+if [ "$status" = "404" ]; then
+    pass "GET deleted file returns 404"
+else
+    fail "GET deleted file returns ${status} instead of 404"
+fi
+
+print_title "${TEST_NUMBER}. DELETE missing file"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+status="$(
+    curl -sS -o /dev/null -w "%{http_code}" \
+        -X DELETE \
+        "${BASE_URL}/uploads/file_that_does_not_exist_42.txt" \
+        2>/dev/null
+)"
+
+if [ "$status" = "404" ]; then
+    pass "DELETE missing file returns 404"
+else
+    fail "DELETE missing file returns ${status} instead of 404"
+fi
+
 print_title "Summary"
 
 printf "${GREEN}PASS:${RESET} %d\n" "$PASS"
