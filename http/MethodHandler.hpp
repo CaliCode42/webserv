@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/25 19:51:12 by sdossa            #+#    #+#             */
-/*   Updated: 2026/07/28 19:00:56 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/10 17:10:55 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,14 +21,16 @@
 class MethodHandler 
 {
 public:
-    // point d'entree called by event loop qd 1 req est complete
-    MethodHandler(const ServerConfig& config);
-    HttpResponse handle(const HttpRequest& req);
-    
+	// point d'entree called by event loop qd 1 req est complete
+	MethodHandler(const ServerConfig& config);
+	HttpResponse handle(const HttpRequest& req);
+	
 private:
-    const ServerConfig& _config;
-    HttpResponse handleGet(const std::string& path);
-
+	const ServerConfig& _config;
+	HttpResponse handleGet(const std::string& path);
+	HttpResponse handlePost(const HttpRequest& req);
+	HttpResponse handleDelete(const std::string& path);
+	
 };
 
 #endif
