@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:33:43 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/12 18:11:07 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/13 10:20:36 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -196,7 +196,7 @@ void	Server::acceptClient()
 	}
 }
 
-// Temporary
+// Temporary :
 // Just to test Error handling,
 // Later this must not be the responsibility of Server.
 HttpResponse	Server::buildErrorResponse(int statusCode)
