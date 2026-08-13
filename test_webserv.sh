@@ -259,6 +259,8 @@ response_file="${TMP_DIR}/raw_get.txt"
 printf 'GET / HTTP/1.1\r\nHost: localhost\r\n\r\n' \
     | nc "$HOST" "$PORT" > "$response_file"
 
+# printf "%s\n" "$response_file"
+
 if grep -q '^HTTP/' "$response_file"; then
     pass "A request sent with CRLF produces an HTTP response"
 else
@@ -277,6 +279,9 @@ fragmented_response="${TMP_DIR}/fragmented.txt"
     sleep 0.2
     printf '\r\n'
 ) | nc "$HOST" "$PORT" > "$fragmented_response"
+
+# printf "%s\n" "$fragmented_response"
+
 
 if grep -q '^HTTP/' "$fragmented_response"; then
     pass "A request sent in multiple fragments is reconstructed correctly"
@@ -648,6 +653,7 @@ if command -v timeout >/dev/null 2>&1; then
         done
     } | timeout 2 nc "$HOST" "$PORT" > "$oversized_response" 2>/dev/null || true
 
+	# cat $oversized_response
     if grep -q '^HTTP/.* 414 ' "$oversized_response"; then
         pass "Oversized request line is rejected with HTTP 414"
     elif [ ! -s "$oversized_response" ]; then
@@ -702,6 +708,104 @@ if command -v timeout >/dev/null 2>&1; then
     fi
 else
     skip "timeout command unavailable: oversized headers test skipped"
+fi
+
+print_title "${TEST_NUMBER}. POST creates uploads directory"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+rm -rf "www/uploads"
+
+status="$(
+    curl -sS -o /dev/null -w "%{http_code}" \
+        -X POST \
+        --data-binary "Hello Webserv 42" \
+        "${BASE_URL}/auto_create_upload.txt" \
+        2>/dev/null
+)"
+
+if [ "$status" = "201" ]; then
+    pass "POST creates uploads directory and returns 201"
+else
+    fail "POST returns ${status} instead of 201 when uploads directory is missing"
+fi
+
+if [ -d "www/uploads" ]; then
+    pass "uploads directory was created automatically"
+else
+    fail "uploads directory was not created"
+fi
+
+if [ -f "www/uploads/auto_create_upload.txt" ]; then
+    pass "Uploaded file was created inside uploads directory"
+else
+    fail "Uploaded file was not created inside uploads directory"
+fi
+
+print_title "${TEST_NUMBER}. Transfer-Encoding case insensitive"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+response="$(
+    raw_request \
+    "POST /case_chunked.txt HTTP/1.1\r\nHost: ${HOST}\r\nTransfer-Encoding: ChUnKeD\r\n\r\n5\r\nHello\r\n0\r\n\r\n"
+)"
+
+status="$(printf "%s" "$response" | head -n 1 | awk '{print $2}')"
+
+if [ "$status" = "201" ]; then
+    pass "Transfer-Encoding: ChUnKeD is accepted"
+else
+    fail "Transfer-Encoding: ChUnKeD returns ${status} instead of 201"
+	printf "%s\n" "$response"
+fi
+
+
+print_title "${TEST_NUMBER}. Invalid Content-Length"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+response="$(
+    raw_request \
+    "POST /invalid_length.txt HTTP/1.1\r\nHost: ${HOST}\r\nContent-Length: 5abc\r\n\r\nHello"
+)"
+
+status="$(printf "%s" "$response" | head -n 1 | awk '{print $2}')"
+
+if [ "$status" = "400" ]; then
+    pass "Invalid Content-Length returns 400"
+else
+    fail "Invalid Content-Length returns ${status} instead of 400"
+fi
+
+
+print_title "${TEST_NUMBER}. Chunked request with trailers"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+response="$(
+    raw_request \
+    "POST /chunked_trailer.txt HTTP/1.1\r\nHost: ${HOST}\r\nTransfer-Encoding: chunked\r\n\r\n5\r\nHello\r\n0\r\nX-Test: trailer-value\r\n\r\n"
+)"
+
+status="$(printf "%s" "$response" | head -n 1 | awk '{print $2}')"
+
+if [ "$status" = "201" ]; then
+    pass "Chunked request with trailers returns 201"
+else
+    fail "Chunked request with trailers returns ${status} instead of 201"
+fi
+
+print_title "${TEST_NUMBER}. Invalid chunk terminator"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+response="$(
+    raw_request \
+    "POST /bad_chunk.txt HTTP/1.1\r\nHost: ${HOST}\r\nTransfer-Encoding: chunked\r\n\r\n5\r\nHelloXX0\r\n\r\n"
+)"
+
+status="$(printf "%s" "$response" | head -n 1 | awk '{print $2}')"
+
+if [ "$status" = "400" ]; then
+    pass "Invalid chunk terminator returns 400"
+else
+    fail "Invalid chunk terminator returns ${status} instead of 400"
 fi
 
 print_title "${TEST_NUMBER}. POST text file"

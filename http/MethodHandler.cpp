@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/25 19:50:52 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/13 12:37:15 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/13 16:55:47 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -60,22 +60,22 @@ HttpResponse MethodHandler::handleGet(const std::string& path)
 	}
 
 	if (S_ISDIR(st.st_mode))
-    {
-        HttpResponse res;
-        res.setStatus(404);
-        res.setBody("<h1>Not Found</h1>", "text/html");
-        return res;
-    }
+	{
+		HttpResponse res;
+		res.setStatus(404);
+		res.setBody("<h1>Not Found</h1>", "text/html");
+		return res;
+	}
 
 	std::ifstream file(path.c_str());
 
 	if (!file.is_open())
-    {
-        HttpResponse res;
-        res.setStatus(500);
-        res.setBody("<h1>Internal Server Error</h1>", "text/html");
-        return res;
-    }
+	{
+		HttpResponse res;
+		res.setStatus(500);
+		res.setBody("<h1>Internal Server Error</h1>", "text/html");
+		return res;
+	}
 
 	std::ostringstream ss;
 	ss << file.rdbuf();
@@ -89,114 +89,134 @@ HttpResponse MethodHandler::handleGet(const std::string& path)
 
 std::string MethodHandler::getContentType(const std::string& path) const
 {
-    std::string::size_type dot = path.rfind('.');
+	std::string::size_type dot = path.rfind('.');
 
-    if (dot == std::string::npos)
-        return "application/octet-stream";
+	if (dot == std::string::npos)
+		return "application/octet-stream";
 
-    std::string extension = path.substr(dot);
+	std::string extension = path.substr(dot);
 
-    if (extension == ".html" || extension == ".htm")
-        return "text/html";
-    if (extension == ".css")
-        return "text/css";
-    if (extension == ".js")
-        return "application/javascript";
-    if (extension == ".txt")
-        return "text/plain";
-    if (extension == ".jpg" || extension == ".jpeg")
-        return "image/jpeg";
-    if (extension == ".png")
-        return "image/png";
-    if (extension == ".gif")
-        return "image/gif";
+	if (extension == ".html" || extension == ".htm")
+		return "text/html";
+	if (extension == ".css")
+		return "text/css";
+	if (extension == ".js")
+		return "application/javascript";
+	if (extension == ".txt")
+		return "text/plain";
+	if (extension == ".jpg" || extension == ".jpeg")
+		return "image/jpeg";
+	if (extension == ".png")
+		return "image/png";
+	if (extension == ".gif")
+		return "image/gif";
 
-    return "application/octet-stream";
+	return "application/octet-stream";
 }
 
 HttpResponse MethodHandler::handlePost(const HttpRequest& req)
 {
-    std::string uri = req.getUri();
+	std::string	uploadDir = _config.getRoot() + "/uploads";
+	
+	struct stat	st;
 
-    std::string::size_type slash = uri.rfind('/');
-    std::string filename;
+	if (stat(uploadDir.c_str(), &st) != 0)
+	{
+		if (mkdir(uploadDir.c_str(), 0755) != 0)
+		{
+			HttpResponse res;
+			res.setStatus(500);
+			res.setBody("<h1>500 - Cannot create upload directory</h1>", "text/html");
+			return res;
+		}
+	}
+	else if (!S_ISDIR(st.st_mode))
+	{
+		HttpResponse res;
+		res.setStatus(500);
+		res.setBody("<h1>500 - Upload path is not a directory</h1>", "text/html");
+		return res;
+	}
+	std::string uri = req.getUri();
 
-    if (slash == std::string::npos)
-        filename = uri;
-    else
-        filename = uri.substr(slash + 1);
+	std::string::size_type slash = uri.rfind('/');
+	std::string filename;
 
-    if (filename.empty())
-    {
-        HttpResponse res;
-        res.setStatus(400);
-        res.setBody("<h1>400 - Invalid filename</h1>", "text/html");
-        return res;
-    }
+	if (slash == std::string::npos)
+		filename = uri;
+	else
+		filename = uri.substr(slash + 1);
 
-    std::string uploadDir = _config.getRoot() + "/uploads/";
-    std::string path = uploadDir + filename;
+	if (filename.empty())
+	{
+		HttpResponse res;
+		res.setStatus(400);
+		res.setBody("<h1>400 - Invalid filename</h1>", "text/html");
+		return res;
+	}
 
-    std::ofstream file(path.c_str(),
-        std::ios::out | std::ios::binary | std::ios::trunc);
+	std::string path = uploadDir + "/" + filename;
 
-    if (!file.is_open())
-    {
-        HttpResponse res;
-        res.setStatus(500);
-        res.setBody("<h1>500 - Cannot open file</h1>", "text/html");
-        return res;
-    }
+	std::ofstream file(path.c_str(),
+		std::ios::out | std::ios::binary | std::ios::trunc);
 
-    file.write(req.getBody().data(), req.getBody().size());
+	if (!file.is_open())
+	{
+		HttpResponse res;
+		res.setStatus(500);
+		res.setBody("<h1>500 - Cannot open file</h1>", "text/html");
+		return res;
+	}
 
-    if (!file.good())
-    {
-        file.close();
+	file.write(req.getBody().data(), req.getBody().size());
 
-        HttpResponse res;
-        res.setStatus(500);
-        res.setBody("<h1>500 - Cannot write file</h1>", "text/html");
-        return res;
-    }
+	if (!file.good())
+	{
+		file.close();
 
-    file.close();
+		HttpResponse res;
+		res.setStatus(500);
+		res.setBody("<h1>500 - Cannot write file</h1>", "text/html");
+		return res;
+	}
 
-    HttpResponse res;
-    res.setStatus(201);
-    res.setBody("<h1>201 - File uploaded</h1>", "text/html");
-    return res;
+	file.close();
+
+	HttpResponse res;
+	res.setStatus(201);
+	res.setBody("<h1>201 - File uploaded</h1>", "text/html");
+	return res;
 }
 
 HttpResponse MethodHandler::handleDelete(const std::string& path)
 {
-    struct stat st;
+	struct stat st;
 
-    if (stat(path.c_str(), &st) != 0)
-    {
-        HttpResponse res;
-        res.setStatus(404);
-        res.setBody("<h1>404 - File not found</h1>", "text/html");
-        return res;
-    }
+	if (stat(path.c_str(), &st) != 0)
+	{
+		HttpResponse res;
+		res.setStatus(404);
+		res.setBody("<h1>404 - File not found</h1>", "text/html");
+		return res;
+	}
 
-    if (S_ISDIR(st.st_mode))
-    {
-        HttpResponse res;
-        res.setStatus(404);
-        res.setBody("<h1>404 - File not found</h1>", "text/html");
-        return res;
-    }
+	if (S_ISDIR(st.st_mode))
+	{
+		HttpResponse res;
+		res.setStatus(404);
+		res.setBody("<h1>404 - File not found</h1>", "text/html");
+		return res;
+	}
 
-    if (std::remove(path.c_str()) != 0)
-    {
-        HttpResponse res;
-        res.setStatus(500);
-        res.setBody("<h1>500 - Cannot delete file</h1>", "text/html");
-        return res;
-    }
+	if (std::remove(path.c_str()) != 0)
+	{
+		HttpResponse res;
+		res.setStatus(500);
+		res.setBody("<h1>500 - Cannot delete file</h1>", "text/html");
+		return res;
+	}
 
-    HttpResponse res;
-    res.setStatus(204);
-    return res;
+	HttpResponse res;
+	res.setStatus(204);
+	return res;
 }

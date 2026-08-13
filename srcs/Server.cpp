@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:33:43 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/13 10:20:36 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/13 17:23:00 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -236,12 +236,6 @@ void	Server::handleClientRead(Client& client)
 		return ;
 	}
 
-	// client.appendToReadBuffer(std::string(buffer, bytes));
-
-	// if (!client.hasCompleteRequest())
-	// 	return;
-
-	// std::string rawRequest = client.extractRequest();
 	HttpRequest& request = client.getRequest();
 
 	request.appendData(buffer, static_cast<std::size_t>(bytes));

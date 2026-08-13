@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 23:52:39 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/13 10:56:22 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/13 17:42:59 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -56,6 +56,7 @@ std::string HttpResponse::reasonPhrase(int code)
 		case 404: return "Not Found";
 		case 405: return "Method Not Allowed";
 		case 413: return "Payload too Large";
+		case 414: return "URI Too Long";
 		case 500: return "Internal Server Error";
 		case 501: return "Not Implemented";
 		default:  return "Unknown";
