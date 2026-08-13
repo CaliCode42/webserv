@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 22:09:53 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/06 00:09:32 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/12 15:47:29 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -49,7 +49,11 @@ public:
 	
 	std::string getHeader(const std::string& key) const;
 	const std::map<std::string, std::string>& getHeaders() const { return _headers; }
+	
+	std::map<std::string, std::string> getCookies() const;
+	
 
+	
 private:
 	State	_state;
 	int		_errorCode;
@@ -63,6 +67,7 @@ private:
 	
 	size_t _contentLength; // parsed when header are done;
 	size_t _chunkSize; //
+	//size_t _cookies;
 	
 	void setError(int code);
 	void onHeadersComplete(); // choice = no body? sized body? chunked?
