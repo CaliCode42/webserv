@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 22:09:59 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/12 16:13:52 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/13 15:49:09 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -120,41 +120,6 @@ bool HttpRequest::parseHeaders()
 		_headers[key] = val; 
 	}	
 }
-
-
-
-
-	//Cookies
-std::map<std::string, std::string> HttpRequest::getCookies() const
-{
-	std::string line = getHeader("Cookie");
-	std::map<std::string, std::string> cookies;
-	
-	std::string::size_type pos = 0;	
-	while (pos < line.size())
-	{
-		std::string::size_type end = line.find(";", pos);
-		if (end == std::string::npos)
-			end = line.size();
-		
-		std::string pair = trim(line.substr(pos, end - pos));
-		std::string::size_type eq = pair.find("=");
-		 
-		if (eq != std::string::npos)
-		{
-			std::string key = trim(pair.substr(0, eq));
-			std::string val = trim(pair.substr(eq + 1)); // skip "="
-			cookies[key] = val;
-		}
-		pos = end + 1;	
-	}
-	return cookies;
-}
-
-
-
-
-
 
 
 //Transfer-Encoding: Chunked wins vs Content-length ^^
@@ -288,3 +253,35 @@ std::string HttpRequest::trim(const std::string& s)
 	std::string::size_type b = s.find_last_not_of(" \t");
 	return s.substr(a, b - a + 1);
 }
+
+	//Cookies
+std::map<std::string, std::string> HttpRequest::getCookies() const
+{
+	std::string line = getHeader("Cookie");
+	std::map<std::string, std::string> cookies;
+	
+	std::string::size_type pos = 0;	
+	while (pos < line.size())
+	{
+		std::string::size_type end = line.find(";", pos);
+		if (end == std::string::npos)
+			end = line.size();
+		
+		std::string pair = trim(line.substr(pos, end - pos));
+		std::string::size_type eq = pair.find("=");
+		 
+		if (eq != std::string::npos)
+		{
+			std::string key = trim(pair.substr(0, eq));
+			std::string val = trim(pair.substr(eq + 1)); // skip "="
+			cookies[key] = val;
+		}
+		pos = end + 1;	
+	}
+	return cookies;
+}
+
+
+
+
+
