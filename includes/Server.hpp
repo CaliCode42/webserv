@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:16:04 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/12 17:56:19 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/14 12:17:32 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,13 +28,16 @@
 class Server
 {
 private:
-	int						_port;
-	int						_serverSocket;
-	std::vector<pollfd>		_fds;
-	std::vector<int>		_clientsToRemove;
-	std::map<int, Client>	_clients;
-	ServerConfig			_config;
-	MethodHandler			_handler;
+	int							_port;
+	int							_serverSocket;
+	std::vector<pollfd>			_fds;
+	std::vector<int>			_clientsToRemove;
+	std::map<int, Client>		_clients;
+	ServerConfig				_config;
+	MethodHandler				_handler;
+	
+	static const std::time_t	_CLIENT_TIMEOUT = 10;
+	static const std::time_t	_POLL_TIMEOUT = 1000;
 
 	HttpResponse	buildErrorResponse(int statusCode);
 
@@ -45,22 +48,24 @@ public:
 	// Server& operator=(const Server& other);
 	~Server();
 
-	void			initSocket();
+	void	initSocket();
 
-	void			run();
+	void	run();
 
-	void			acceptClient();
+	void	acceptClient();
 
-	void			handleClientRead(Client& client);
-	void			handleClientWrite(Client& client);
+	void	handleClientRead(Client& client);
+	void	handleClientWrite(Client& client);
 
-	void			enableClientWrite(int fd);
-	void			disableClientWrite(int fd);
+	void	enableClientWrite(int fd);
+	void	disableClientWrite(int fd);
 
-	void			markClientForRemoval(int fd);
-	bool			isMarkedForRemoval(int fd)const;
-	void			removeMarkedClients();
-	void			removeClient(int fd);
+	void	markClientForRemoval(int fd);
+	bool	isMarkedForRemoval(int fd)const;
+	void	removeMarkedClients();
+	void	removeClient(int fd);
+
+	void	checkClientTimeouts();
 };
 
 bool	setNonBlocking(int fd);

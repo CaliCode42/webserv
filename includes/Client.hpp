@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:16:17 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/13 17:50:18 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/14 12:17:23 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,16 +15,19 @@
 
 #include <iostream>
 #include <string>
+#include <ctime>
 #include "HttpRequest.hpp"
 
 class	Client
 {
 private:
-	int			_fd;
-	std::string	_writeBuffer;
-	HttpRequest _request;
+	int							_fd;
+	std::string					_writeBuffer;
+	HttpRequest 				_request;
+	std::time_t					_lastActivity;
 
 public:
+
 
 	Client();
 	Client(int fd);
@@ -42,6 +45,9 @@ public:
 	
 	bool 				hasPendingWriteData() const;
     void				removeSentBytes(std::size_t count);
+
+	void        		updateActivity();
+	std::time_t 		getLastActivity() const;
 };
 
 #endif

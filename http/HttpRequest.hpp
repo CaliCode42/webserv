@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 22:09:53 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/12 18:15:22 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/14 11:29:02 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,7 +19,6 @@
 
 # include <string>
 # include <map>
-
 
 class HttpRequest
 {
@@ -67,6 +66,8 @@ private:
 	
 	size_t _contentLength; // parsed when header are done;
 	size_t _chunkSize; //
+	static const size_t	_MAX_BODY_SIZE = 1024 * 1024;
+
 	
 	void setError(int code);
 	void onHeadersComplete(); // choice = no body? sized body? chunked?

@@ -7,6 +7,7 @@ PORT="${PORT:-8080}"
 BASE_URL="http://${HOST}:${PORT}"
 BIGFILE_PATH="${BIGFILE_PATH:-www/bigfile.bin}"
 TMP_DIR=".webserv_test_tmp"
+CLIENT_TIMEOUT_VALUE=10
 
 GREEN="\033[0;32m"
 RED="\033[0;31m"
@@ -892,6 +893,365 @@ if [ "$status" = "404" ]; then
     pass "DELETE missing file returns 404"
 else
     fail "DELETE missing file returns ${status} instead of 404"
+fi
+
+print_title "${TEST_NUMBER}. Content-Length at body size limit"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+BODY_LIMIT_FILE="${TMP_DIR}/body_limit.bin"
+
+dd if=/dev/zero of="${BODY_LIMIT_FILE}" bs=1024 count=1024 2>/dev/null
+
+status="$(
+    curl -sS -o /dev/null -w "%{http_code}" \
+        -X POST \
+        --data-binary "@${BODY_LIMIT_FILE}" \
+        "${BASE_URL}/body_limit.bin" \
+        2>/dev/null
+)"
+
+if [ "$status" = "201" ]; then
+    pass "Content-Length exactly at MAX_BODY_SIZE is accepted"
+else
+    fail "Content-Length at MAX_BODY_SIZE returns ${status} instead of 201"
+fi
+
+
+print_title "${TEST_NUMBER}. Content-Length above body size limit"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+BODY_TOO_LARGE_FILE="${TMP_DIR}/body_too_large.bin"
+
+dd if=/dev/zero of="${BODY_TOO_LARGE_FILE}" bs=1048577 count=1 2>/dev/null
+
+status="$(
+    curl -sS -o /dev/null -w "%{http_code}" \
+        -X POST \
+        --data-binary "@${BODY_TOO_LARGE_FILE}" \
+        "${BASE_URL}/body_too_large.bin" \
+        2>/dev/null
+)"
+
+if [ "$status" = "413" ]; then
+    pass "Content-Length above MAX_BODY_SIZE returns 413"
+else
+    fail "Content-Length above MAX_BODY_SIZE returns ${status} instead of 413"
+fi
+
+
+print_title "${TEST_NUMBER}. Chunked body at size limit"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+CHUNKED_LIMIT_RESPONSE="${TMP_DIR}/chunked_limit_response.txt"
+
+{
+    printf 'POST /chunked_limit.bin HTTP/1.1\r\n'
+    printf 'Host: %s\r\n' "$HOST"
+    printf 'Transfer-Encoding: chunked\r\n'
+    printf '\r\n'
+
+    printf '80000\r\n'
+    dd if=/dev/zero bs=524288 count=1 2>/dev/null
+    printf '\r\n'
+
+    printf '80000\r\n'
+    dd if=/dev/zero bs=524288 count=1 2>/dev/null
+    printf '\r\n'
+
+    printf '0\r\n'
+    printf '\r\n'
+} | timeout 3 nc "$HOST" "$PORT" > "${CHUNKED_LIMIT_RESPONSE}" 2>/dev/null || true
+
+if grep -q '^HTTP/.* 201 ' "${CHUNKED_LIMIT_RESPONSE}"; then
+    pass "Chunked body exactly at MAX_BODY_SIZE is accepted"
+else
+    fail "Chunked body at MAX_BODY_SIZE does not return 201"
+fi
+
+
+print_title "${TEST_NUMBER}. Chunked body above size limit"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+CHUNKED_TOO_LARGE_RESPONSE="${TMP_DIR}/chunked_too_large_response.txt"
+
+{
+    printf 'POST /chunked_too_large.bin HTTP/1.1\r\n'
+    printf 'Host: %s\r\n' "$HOST"
+    printf 'Transfer-Encoding: chunked\r\n'
+    printf '\r\n'
+
+    printf '80000\r\n'
+    dd if=/dev/zero bs=524288 count=1 2>/dev/null
+    printf '\r\n'
+
+    printf '80001\r\n'
+    dd if=/dev/zero bs=524289 count=1 2>/dev/null
+    printf '\r\n'
+} | timeout 3 nc "$HOST" "$PORT" > "${CHUNKED_TOO_LARGE_RESPONSE}" 2>/dev/null || true
+
+if grep -q '^HTTP/.* 413 ' "${CHUNKED_TOO_LARGE_RESPONSE}"; then
+    pass "Chunked body above MAX_BODY_SIZE returns 413"
+else
+    fail "Chunked body above MAX_BODY_SIZE does not return 413"
+fi
+
+
+print_title "${TEST_NUMBER}. Oversized announced chunk"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+OVERSIZED_CHUNK_RESPONSE="${TMP_DIR}/oversized_chunk_response.txt"
+
+{
+    printf 'POST /oversized_chunk.bin HTTP/1.1\r\n'
+    printf 'Host: %s\r\n' "$HOST"
+    printf 'Transfer-Encoding: chunked\r\n'
+    printf '\r\n'
+
+    # 0x100001 = 1048577 = MAX_BODY_SIZE + 1
+    printf '100001\r\n'
+} | timeout 2 nc "$HOST" "$PORT" > "${OVERSIZED_CHUNK_RESPONSE}" 2>/dev/null || true
+
+if grep -q '^HTTP/.* 413 ' "${OVERSIZED_CHUNK_RESPONSE}"; then
+    pass "Oversized announced chunk is rejected immediately with 413"
+elif [ ! -s "${OVERSIZED_CHUNK_RESPONSE}" ]; then
+    fail "Oversized announced chunk produced no response"
+else
+    fail "Oversized announced chunk produced an unexpected response"
+    printf '%s\n' "$(cat "${OVERSIZED_CHUNK_RESPONSE}")"
+fi
+
+
+print_title "${TEST_NUMBER}. Server alive after body limit tests"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+if server_is_up; then
+    pass "Server remains responsive after body size limit tests"
+else
+    fail "Server stopped responding after body size limit tests"
+fi
+
+print_title "${TEST_NUMBER}. Idle client timeout"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+IDLE_OUTPUT="${TMP_DIR}/idle_timeout.txt"
+
+{
+    sleep $((CLIENT_TIMEOUT_VALUE + 2))
+} | timeout 14 nc "$HOST" "$PORT" > "${IDLE_OUTPUT}" 2>/dev/null || true
+
+if server_is_up; then
+    pass "Idle client is closed without affecting the server"
+else
+    fail "Server stopped responding after idle client timeout"
+fi
+
+
+print_title "${TEST_NUMBER}. Incomplete request timeout"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+INCOMPLETE_OUTPUT="${TMP_DIR}/incomplete_timeout.txt"
+
+{
+    printf 'GET /index.html HTTP/1.1\r\n'
+    printf 'Host: %s\r\n' "$HOST"
+    # no final CRLF: request intentionally incomplete
+    sleep $((CLIENT_TIMEOUT_VALUE + 2))
+} | timeout 14 nc "$HOST" "$PORT" > "${INCOMPLETE_OUTPUT}" 2>/dev/null || true
+
+if server_is_up; then
+    pass "Incomplete request is timed out without affecting the server"
+else
+    fail "Server stopped responding after incomplete request timeout"
+fi
+
+
+print_title "${TEST_NUMBER}. Server serves other clients during timeout"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+SLOW_CLIENT_OUTPUT="${TMP_DIR}/slow_client_timeout.txt"
+
+{
+    printf 'GET /index.html HTTP/1.1\r\n'
+    printf 'Host: %s\r\n' "$HOST"
+    sleep $((CLIENT_TIMEOUT_VALUE + 2))
+} | timeout 14 nc "$HOST" "$PORT" > "${SLOW_CLIENT_OUTPUT}" 2>/dev/null &
+
+slow_pid=$!
+
+sleep 1
+
+status="$(http_status "${BASE_URL}/index.html")"
+
+if [ "$status" = "200" ]; then
+    pass "Server serves other clients while one client is inactive"
+else
+    fail "Concurrent GET returns ${status} while another client is inactive"
+fi
+
+wait "$slow_pid" 2>/dev/null || true
+
+
+print_title "${TEST_NUMBER}. Client activity refreshes timeout"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+ACTIVE_OUTPUT="${TMP_DIR}/active_timeout.txt"
+
+{
+    printf 'GET /index.html HTTP/1.1\r\n'
+    sleep $(((CLIENT_TIMEOUT_VALUE + 2) / 2))
+    printf 'Host: %s\r\n' "$HOST"
+    sleep $(((CLIENT_TIMEOUT_VALUE + 2) / 2))
+    printf '\r\n'
+} | timeout 16 nc "$HOST" "$PORT" > "${ACTIVE_OUTPUT}" 2>/dev/null || true
+
+if grep -q '^HTTP/.* 200 ' "${ACTIVE_OUTPUT}"; then
+    pass "Client activity refreshes inactivity timeout"
+elif [ ! -s "${ACTIVE_OUTPUT}" ]; then
+    fail "Client was closed before completing active request"
+else
+    fail "Active client produced an unexpected response"
+    printf '%s\n' "$(cat "${ACTIVE_OUTPUT}")"
+fi
+
+print_title "${TEST_NUMBER}. Idle socket is closed by server"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+IDLE_OUTPUT="${TMP_DIR}/idle_socket.txt"
+
+nc "$HOST" "$PORT" > "${IDLE_OUTPUT}" 2>/dev/null &
+nc_pid=$!
+
+sleep 12
+
+if kill -0 "$nc_pid" 2>/dev/null; then
+    fail "Idle socket is still open after client timeout"
+    kill "$nc_pid" 2>/dev/null || true
+    wait "$nc_pid" 2>/dev/null || true
+else
+    wait "$nc_pid" 2>/dev/null || true
+    pass "Idle socket is closed by server after timeout"
+fi
+
+print_title "${TEST_NUMBER}. Incomplete request socket is closed"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+if exec 3<>/dev/tcp/"$HOST"/"$PORT"; then
+
+    printf 'GET /index.html HTTP/1.1\r\n' >&3
+    printf 'Host: %s\r\n' "$HOST" >&3
+
+    if IFS= read -r -t $((CLIENT_TIMEOUT_VALUE + 2)) -u 3 _; then
+        read_status=0
+    else
+        read_status=$?
+    fi
+
+    if [ "$read_status" -eq 1 ]; then
+        pass "Incomplete request is closed after inactivity timeout"
+    elif [ "$read_status" -gt 128 ]; then
+        fail "Incomplete request socket is still open after inactivity timeout"
+    else
+        fail "Incomplete request produced unexpected result (read status: ${read_status})"
+    fi
+
+    exec 3>&-
+else
+    fail "Could not open socket for incomplete request timeout test"
+fi
+
+print_title "${TEST_NUMBER}. Other clients do not refresh idle timeout"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+IDLE_OUTPUT="${TMP_DIR}/independent_idle_socket.txt"
+
+nc "$HOST" "$PORT" > "${IDLE_OUTPUT}" 2>/dev/null &
+idle_pid=$!
+
+i=0
+while [ "$i" -lt 12 ]; do
+    status="$(http_status "${BASE_URL}/index.html")"
+
+    if [ "$status" != "200" ]; then
+        fail "Concurrent GET returned ${status} during idle timeout test"
+        break
+    fi
+
+    sleep 1
+    i=$((i + 1))
+done
+
+if kill -0 "$idle_pid" 2>/dev/null; then
+    fail "Idle client survived because of unrelated server activity"
+    kill "$idle_pid" 2>/dev/null || true
+    wait "$idle_pid" 2>/dev/null || true
+else
+    wait "$idle_pid" 2>/dev/null || true
+    pass "Other clients do not refresh idle client's timeout"
+fi
+
+print_title "${TEST_NUMBER}. Other clients do not refresh idle timeout"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+IDLE_OUTPUT="${TMP_DIR}/independent_idle_socket.txt"
+
+nc "$HOST" "$PORT" > "${IDLE_OUTPUT}" 2>/dev/null &
+idle_pid=$!
+
+i=0
+while [ "$i" -lt 12 ]; do
+    status="$(http_status "${BASE_URL}/index.html")"
+
+    if [ "$status" != "200" ]; then
+        fail "Concurrent GET returned ${status} during idle timeout test"
+        break
+    fi
+
+    sleep 1
+    i=$((i + 1))
+done
+
+if kill -0 "$idle_pid" 2>/dev/null; then
+    fail "Idle client survived because of unrelated server activity"
+    kill "$idle_pid" 2>/dev/null || true
+    wait "$idle_pid" 2>/dev/null || true
+else
+    wait "$idle_pid" 2>/dev/null || true
+    pass "Other clients do not refresh idle client's timeout"
+fi
+
+print_title "${TEST_NUMBER}. Activity near timeout resets timer"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+ACTIVE_OUTPUT="${TMP_DIR}/active_timeout_reset.txt"
+
+{
+    printf 'GET /index.html HTTP/1.1\r\n'
+
+    sleep 9
+
+    printf 'Host: %s\r\n' "$HOST"
+
+    sleep 3
+
+    printf '\r\n'
+} | timeout 16 nc "$HOST" "$PORT" > "${ACTIVE_OUTPUT}" 2>/dev/null || true
+
+if grep -q '^HTTP/.* 200 ' "${ACTIVE_OUTPUT}"; then
+    pass "Activity near timeout correctly resets inactivity timer"
+elif [ ! -s "${ACTIVE_OUTPUT}" ]; then
+    fail "Client was closed despite activity before timeout"
+else
+    fail "Active client produced an unexpected response"
+    printf '%s\n' "$(cat "${ACTIVE_OUTPUT}")"
+fi
+
+print_title "${TEST_NUMBER}. Server alive after timeout tests"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+if server_is_up; then
+    pass "Server remains responsive after timeout tests"
+else
+    fail "Server stopped responding after timeout tests"
 fi
 
 print_title "Summary"

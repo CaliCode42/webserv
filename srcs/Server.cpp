@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:33:43 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/13 17:23:00 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/14 17:26:01 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -99,7 +99,7 @@ void	Server::run()
 {
 	while (true)
 	{
-		int result = poll(&_fds[0], static_cast<nfds_t>(_fds.size()), -1);
+		int result = poll(&_fds[0], static_cast<nfds_t>(_fds.size()), _POLL_TIMEOUT);
 		if (result < 0)
 		{
 			if (errno == EINTR)
@@ -156,6 +156,7 @@ void	Server::run()
 			if ((revents & POLLOUT) && it != _clients.end() && !isMarkedForRemoval(fd))
 				handleClientWrite(it->second);
 		}
+		checkClientTimeouts();
 		removeMarkedClients();
 	}
 }
@@ -236,11 +237,13 @@ void	Server::handleClientRead(Client& client)
 		return ;
 	}
 
+	client.updateActivity();
+	
 	HttpRequest& request = client.getRequest();
 
 	request.appendData(buffer, static_cast<std::size_t>(bytes));
 
-	 if (request.hasError())
+	if (request.hasError())
 	{
 		int	statusCode = request.errorCode();
 
@@ -304,6 +307,7 @@ void Server::handleClientWrite(Client& client)
 	}
 	else if (bytesSent > 0)
 	{
+		client.updateActivity();
 		client.removeSentBytes(static_cast<std::size_t>(bytesSent));
 	}
 	else // bytesSent == 0
@@ -407,4 +411,24 @@ bool	setNonBlocking(int fd)
 	}
 	return (true);
 		
+}
+
+void Server::checkClientTimeouts()
+{
+	std::time_t	now = std::time(NULL);
+
+	for (std::map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); ++it)
+	{
+		std::cout << "fd " << it->first
+			<< " inactive for "
+			<< now - it->second.getLastActivity()
+			<< " seconds"
+			<< std::endl;
+
+		if (now - it->second.getLastActivity() >= _CLIENT_TIMEOUT)
+		{
+			std::cout << "Timeout fd " << it->first << std::endl;
+			markClientForRemoval(it->first);
+		}
+	}
 }

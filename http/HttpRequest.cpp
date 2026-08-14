@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 22:09:59 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/13 16:50:26 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/14 11:38:45 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -169,6 +169,12 @@ void HttpRequest::onHeadersComplete()
 		return;
 	}
 
+	if (_contentLength > _MAX_BODY_SIZE)
+	{
+		setError(413);
+		return;
+	}
+
 	_state = STATE_BODY;
 }
 
@@ -245,6 +251,12 @@ bool HttpRequest::parseChunkSize()
         return false;
     }
 
+	if (_body.size() > _MAX_BODY_SIZE || _chunkSize > _MAX_BODY_SIZE - _body.size())
+	{
+		setError(413);
+		return false;
+	}
+
     _buffer.erase(0, eol + 2);
     _state = STATE_CHUNK_DATA;
 
@@ -254,6 +266,13 @@ bool HttpRequest::parseChunkSize()
 
 bool HttpRequest::parseChunkData()
 {
+	// si body trop long, return false
+	if (_body.size() > _MAX_BODY_SIZE
+        || _chunkSize > _MAX_BODY_SIZE - _body.size())
+    {
+        setError(413);
+        return false;
+    }
 	//si buffer trop court, return false
 	if (_buffer.size() < _chunkSize + 2)
 		return false;
