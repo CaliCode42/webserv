@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 22:09:59 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/15 12:51:50 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/15 14:58:57 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -79,7 +79,6 @@ bool HttpRequest::parseRequestLine()
 		setError(501); //Not Implemented
 		return false;
 	}
-	
 	_state = STATE_HEADERS;
 	return true;
 }
@@ -117,6 +116,11 @@ bool HttpRequest::parseHeaders()
 			
 		std::string key = toLower(trim(line.substr(0, colon)));
 		std::string val = trim(line.substr(colon + 1)); // skip ":"
+		if (key == "content-length" && _headers.find(key) != _headers.end())
+		{
+			setError(400);
+			return false;
+		}
 		_headers[key] = val; 
 	}	
 }
@@ -141,8 +145,8 @@ void HttpRequest::onHeadersComplete()
 			return;
 		}
 		std::istringstream iss(contentLengthStr);
-		iss >> _contentLength;
-		if (iss.fail())
+		std::string extra;
+		if (!(iss >> _contentLength) || (iss >> extra))
 		{
 			setError(400);
 			return;
@@ -179,13 +183,12 @@ bool HttpRequest::parseChunkSize()
 	//if last chunk ="0", need the next 2 octets "\r\n"
 	if (line == "0")
 	{
-		//need "0\r\n\r\n" = 5 octets minimum
-		if (_buffer.size() < 5)
-			return false;
-		//check final \r\n
-		if (_buffer.substr(3, 2) != "\r\n")
+		//trailers (if any) end with empty line "\r\n\r\n"
+		std::string::size_type termPos = _buffer.find("\r\n");
+		if (termPos == std::string::npos)
 		{
-			setError(400);
+			if (_buffer.size() > 8192)
+				setError(400);
 			return false;
 		}
 		_buffer.erase(0, 5);
@@ -194,6 +197,23 @@ bool HttpRequest::parseChunkSize()
 		return true;
 	}
 
+	// if (line == "0")
+	// {
+	// 	//need "0\r\n\r\n" = 5 octets minimum
+	// 	if (_buffer.size() < 5)
+	// 		return false;
+	// 	//check final \r\n
+	// 	if (_buffer.substr(3, 2) != "\r\n")
+	// 	{
+	// 		setError(400);
+	// 		return false;
+	// 	}
+	// 	_buffer.erase(0, 5);
+	// 	_chunkSize = 0;
+	// 	_state = STATE_COMPLETE;
+	// 	return true;
+	// }
+
 	//extract line, convert hexa
 	_buffer.erase(0, eol + 2);
 	std::istringstream iss(line);
@@ -201,6 +221,13 @@ bool HttpRequest::parseChunkSize()
 	if(iss.fail())
 	{
 		setError(400);
+		return false;
+	}
+
+	static const std::size_t MAX_CHUNK_SIZE = 10 * 1024 * 1024;
+	if (_chunkSize > MAX_CHUNK_SIZE)
+	{
+		setError(413);
 		return false;
 	}
 	
@@ -214,12 +241,15 @@ bool HttpRequest::parseChunkData()
 	//if buffer to short, return false
 	if (_buffer.size() < _chunkSize + 2)
 		return false;
+	if (_buffer.substr(_chunkSize, 2) != "\r\n")
+	{
+		setError(400);
+		return false;
+	}
 	_body.append(_buffer, 0, _chunkSize);
 	_buffer.erase(0, _chunkSize + 2);
 	_state = STATE_CHUNK_SIZE;
 	return true;
-	
-
 }
 
 // GETTERS AND HELPERS

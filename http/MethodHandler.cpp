@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/25 19:50:52 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/15 12:27:58 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/15 14:55:13 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,7 @@
 #include <sys/stat.h>
 #include <fstream>
 #include <cstdio>
+#include <cerrno>
 
 MethodHandler::MethodHandler(const ServerConfig& config) : _config(config) {}
 
@@ -42,7 +43,13 @@ HttpResponse MethodHandler::handle(const HttpRequest& req)
 
 	if (req.getMethod() == "GET")
 	{
-		std::string path = _config.getRoot() + req.getUri();
+		std::string uri = req.getUri();
+		std::string::size_type qpos = uri.find('?');
+		if (qpos != std::string::npos)
+			uri = uri.substr(0, qpos);
+		if (uri.empty() || uri[uri.size() - 1] == '/')
+			uri += "index.html";
+		std::string path = _config.getRoot() + uri;
 		return handleGet(path);
 	}
 	if (req.getMethod() == "POST")
@@ -51,12 +58,14 @@ HttpResponse MethodHandler::handle(const HttpRequest& req)
 	}
 	if (req.getMethod() == "DELETE")
 	{
-		std::string path = _config.getRoot() + req.getUri();
+		std::string uri = req.getUri();
+		std::string::size_type qpos = uri.find('?');
+		if (qpos != std::string::npos)
+			uri = uri.substr(0, qpos);
+		std::string path = _config.getRoot() + uri;
 		return handleDelete(path);
 	}
-	
 	return makeError(501);
-
 }
 
 HttpResponse MethodHandler::handleGet(const std::string& path)
@@ -85,6 +94,14 @@ HttpResponse MethodHandler::handlePost(const HttpRequest& req)
 	//path to save the file
 	std::string uploadDir = _config.getRoot() + "/uploads/";
 
+	struct stat st;
+	if (stat(uploadDir.c_str(), &st) != 0)
+	{
+		if (mkdir(uploadDir.c_str(), 0755) != 0)
+			return makeError(500);
+	}	
+
+	
 	std::string::size_type slashPos = req.getUri().find_last_of('/');
 	std::string filename;
 	if (slashPos != std::string::npos)
