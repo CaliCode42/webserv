@@ -6,7 +6,7 @@
 #    By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/06/22 14:54:39 by tcali             #+#    #+#              #
-#    Updated: 2026/07/28 19:07:26 by sdossa           ###   ########.fr        #
+#    Updated: 2026/08/15 15:20:23 by sdossa           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -28,6 +28,7 @@ SRC=\
 	$(HTTP_DIR)/HttpRequest.cpp\
 	$(HTTP_DIR)/HttpResponse.cpp\
 	$(HTTP_DIR)/MethodHandler.cpp\
+	$(HTTP_DIR)/SessionManager.cpp\
 
 OBJ=$(SRC:%.cpp=$(OBJ_DIR)/%.o)
 
