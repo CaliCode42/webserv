@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 22:09:53 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/12 15:47:29 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/15 11:52:10 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,7 +22,6 @@ class HttpRequest
 public:
 	enum State
 	{
-		
 		STATE_REQUEST_LINE,
 		STATE_HEADERS,
 		STATE_BODY,

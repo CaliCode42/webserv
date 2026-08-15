@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/12 16:37:09 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/12 20:18:08 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/15 11:11:25 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,8 @@
 #include <string>
 #include <map>
 #include <ctime>
+#include <cstdlib>
+
 
 class SessionManager 
 {

@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 22:09:59 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/13 15:49:09 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/15 12:51:50 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -59,24 +59,24 @@ bool HttpRequest::parseRequestLine()
 	if (eol == std::string::npos)
 	{
 		if (_buffer.size() > 8192)
-			setError(414); // URI too long 
+			setError(414); // URI Too Large
 		return false;
 	}
 		
  	std::string line = _buffer.substr(0, eol);
-	_buffer.erase(0, eol + 2); //enlève le "GET /..\r\n"
+	_buffer.erase(0, eol + 2); //remove "GET /..\r\n"
 
 	std::istringstream iss(line);
 	std::string extra;
 	if (!(iss >> _method >> _uri >> _version) || (iss >> extra))
 	{
-		setError(400);// CHECK
+		setError(400);// Bad Request
 		return false;
 	}
 	
 	if (_method != "GET" && _method != "POST" && _method != "DELETE")
 	{
-		setError(501); //CHECK
+		setError(501); //Not Implemented
 		return false;
 	}
 	
@@ -95,7 +95,7 @@ bool HttpRequest::parseHeaders()
 		if (eol == std::string::npos) 
 		{
 			if (_buffer.size() > 32768)
-				setError(431); // Header too long 
+				setError(431); // Header Too Long 
 			return false;
 		}
 
@@ -111,7 +111,7 @@ bool HttpRequest::parseHeaders()
 		std::string::size_type colon = line.find(':');
 		if (colon == std::string::npos || colon == 0)
 		{
-			setError(400); //
+			setError(400);
 			return false;
 		}
 			
@@ -155,10 +155,10 @@ bool HttpRequest::parseBody()
 {
 	if (_buffer.size() < _contentLength)
 	{
-		//not enough octets, we continue
+		//not enough octets = continue
 		return false;
 	}
-	//si assez, on copie
+	//otherwise copie
 	_body = _buffer.substr(0, _contentLength);
 	_buffer.erase(0, _contentLength);
 	_state = STATE_COMPLETE;
@@ -194,7 +194,7 @@ bool HttpRequest::parseChunkSize()
 		return true;
 	}
 
-	//extraire line, convert hexa
+	//extract line, convert hexa
 	_buffer.erase(0, eol + 2);
 	std::istringstream iss(line);
 	iss >> std::hex >> _chunkSize;
@@ -231,11 +231,13 @@ std::string HttpRequest::getHeader(const std::string& key) const
 	return it->second;
 }
 
+
 void HttpRequest::setError(int code)
 {
 	_errorCode = code;
 	_state = STATE_ERROR;
 }
+
 
 std::string HttpRequest::toLower(const std::string& s)
 {
@@ -244,6 +246,7 @@ std::string HttpRequest::toLower(const std::string& s)
 		out[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(out[i])));
 	return out;
 }
+
 
 std::string HttpRequest::trim(const std::string& s)
 {
@@ -254,7 +257,8 @@ std::string HttpRequest::trim(const std::string& s)
 	return s.substr(a, b - a + 1);
 }
 
-	//Cookies
+
+//Cookies
 std::map<std::string, std::string> HttpRequest::getCookies() const
 {
 	std::string line = getHeader("Cookie");

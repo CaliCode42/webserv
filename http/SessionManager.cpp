@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/12 16:37:14 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/13 14:45:24 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/15 11:17:13 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,7 @@
 
 SessionManager::SessionManager(long ttlSeconds) : _ttl(ttlSeconds)
 {
-	//std::srand(static_cast<unsigned int>(std::time(0)));
+	std::srand(static_cast<unsigned int>(std::time(0)));
 }
 
 std::string SessionManager::create()
@@ -67,8 +67,15 @@ std::string SessionManager::get(const std::string& sid, const std::string& key)
 
 std::string SessionManager::generateId()
 {
-	static unsigned long counter = 0;
-	std::ostringstream ss;
-	ss << std::time(0) << "_" << counter++;
-	return ss.str();
+	static const char* hex = "0123456789abcdef";
+	std::string id;
+	id.reserve(32);
+	for (int i = 0; i < 32; i++)
+		id += hex[std::rand() % 16];
+	return id;
+}
+
+void SessionManager::destroy(const std::string& sid)
+{
+	_sessions.erase(sid);
 }

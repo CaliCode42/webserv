@@ -1,7 +1,8 @@
 /obj
 webserv
-./vscode
 .vscode/
 .DS_Store
 test_incremental
+test_incremental.cpp
+www/
 *.o
