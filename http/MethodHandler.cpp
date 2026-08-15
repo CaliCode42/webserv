@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/25 19:50:52 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/15 14:55:13 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/15 20:41:18 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -152,10 +152,10 @@ HttpResponse MethodHandler::handleDelete(const std::string& path)
 
 std::string MethodHandler::contentTypeFor(const std::string& path)
 {
-	std::string::size_type dot = path.find_last_of('.');
-	if (dot == std::string::npos)
+	std::string::size_type dotPos = path.find_last_of('.');
+	if (dotPos == std::string::npos)
 		return "application/octet-stream";
-	std::string ext = path.substr(dot);
+	std::string ext = path.substr(dotPos);
 	
 	if (ext == ".html" || ext == ".htm")	return "text/html";
 	if (ext == ".css")						return "text/css";

@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/12 16:37:14 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/15 11:17:13 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/16 01:42:55 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,37 +32,37 @@ bool SessionManager::exists(const std::string& sid)
 {
 	if (sid.empty())
 		return false;
-	std::map<std::string, Session>::iterator it = _sessions.find(sid);
-	if (it == _sessions.end())
+	std::map<std::string, Session>::iterator sessionIt = _sessions.find(sid);
+	if (sessionIt == _sessions.end())
 		return false;
 
 	std::time_t now = std::time(0);
-	if (now - it->second.lastSeen > _ttl) // expired = forget it
+	if (now - sessionIt->second.lastSeen > _ttl) // expired = forget it
 	{
-		_sessions.erase(it);
+		_sessions.erase(sessionIt);
 		return false;
 	}
-	it->second.lastSeen = now; //sliding expiration
+	sessionIt->second.lastSeen = now; //sliding expiration
 	return true;
 }
 
 void SessionManager::set(const std::string& sid, const std::string& key,
 						const std::string& value)
 {
-	std::map<std::string, Session>::iterator it = _sessions.find(sid);
-	if (it != _sessions.end())
-		it->second.data[key] = value;
+	std::map<std::string, Session>::iterator sessionIt = _sessions.find(sid);
+	if (sessionIt != _sessions.end())
+		sessionIt->second.data[key] = value;
 }
 
 std::string SessionManager::get(const std::string& sid, const std::string& key)
 {
-	std::map<std::string, Session>::iterator it = _sessions.find(sid);
-	if (it == _sessions.end())
+	std::map<std::string, Session>::iterator sessionIt = _sessions.find(sid);
+	if (sessionIt == _sessions.end())
 		return "";
-	std::map<std::string, std::string>::iterator kv = it->second.data.find(key);
-	if (kv == it->second.data.end())
+	std::map<std::string, std::string>::iterator dataIt = sessionIt->second.data.find(key);
+	if (dataIt == sessionIt->second.data.end())
 		return "";
-	return kv->second;
+	return dataIt->second;
 }
 
 std::string SessionManager::generateId()
