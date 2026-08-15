@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 22:09:59 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/15 14:58:57 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/15 20:49:55 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -184,35 +184,18 @@ bool HttpRequest::parseChunkSize()
 	if (line == "0")
 	{
 		//trailers (if any) end with empty line "\r\n\r\n"
-		std::string::size_type termPos = _buffer.find("\r\n");
-		if (termPos == std::string::npos)
+		std::string::size_type trailerEnd = _buffer.find("\r\n\r\n");
+		if (trailerEnd == std::string::npos)
 		{
 			if (_buffer.size() > 8192)
 				setError(400);
 			return false;
 		}
-		_buffer.erase(0, 5);
+		_buffer.erase(0, trailerEnd + 4);
 		_chunkSize = 0;
 		_state = STATE_COMPLETE;
 		return true;
 	}
-
-	// if (line == "0")
-	// {
-	// 	//need "0\r\n\r\n" = 5 octets minimum
-	// 	if (_buffer.size() < 5)
-	// 		return false;
-	// 	//check final \r\n
-	// 	if (_buffer.substr(3, 2) != "\r\n")
-	// 	{
-	// 		setError(400);
-	// 		return false;
-	// 	}
-	// 	_buffer.erase(0, 5);
-	// 	_chunkSize = 0;
-	// 	_state = STATE_COMPLETE;
-	// 	return true;
-	// }
 
 	//extract line, convert hexa
 	_buffer.erase(0, eol + 2);
@@ -238,7 +221,7 @@ bool HttpRequest::parseChunkSize()
 
 bool HttpRequest::parseChunkData()
 {
-	//if buffer to short, return false
+	//if buffer too short, return false
 	if (_buffer.size() < _chunkSize + 2)
 		return false;
 	if (_buffer.substr(_chunkSize, 2) != "\r\n")
@@ -255,10 +238,10 @@ bool HttpRequest::parseChunkData()
 // GETTERS AND HELPERS
 std::string HttpRequest::getHeader(const std::string& key) const 
 {
-	std::map<std::string, std::string>::const_iterator it = _headers.find(toLower(key));
-	if (it == _headers.end())
+	std::map<std::string, std::string>::const_iterator headerIt = _headers.find(toLower(key));
+	if (headerIt == _headers.end())
 		return "";
-	return it->second;
+	return headerIt->second;
 }
 
 
@@ -280,11 +263,11 @@ std::string HttpRequest::toLower(const std::string& s)
 
 std::string HttpRequest::trim(const std::string& s)
 {
-	std::string::size_type a = s.find_first_not_of(" \t");
-	if (a == std::string::npos)
+	std::string::size_type start = s.find_first_not_of(" \t");
+	if (start == std::string::npos)
 		return "";
-	std::string::size_type b = s.find_last_not_of(" \t");
-	return s.substr(a, b - a + 1);
+	std::string::size_type end = s.find_last_not_of(" \t");
+	return s.substr(start, end - start + 1);
 }
 
 
