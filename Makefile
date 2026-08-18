@@ -6,7 +6,7 @@
 #    By: tcali <tcali@student.42.fr>                +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/06/22 14:54:39 by tcali             #+#    #+#              #
-#    Updated: 2026/08/17 12:30:40 by tcali            ###   ########.fr        #
+#    Updated: 2026/08/18 19:28:59 by tcali            ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -27,6 +27,8 @@ SRC=\
 	$(SRC_DIR)/ServerConfig.cpp\
 	$(SRC_DIR)/LocationConfig.cpp\
 	$(SRC_DIR)/ConfigParser.cpp\
+	$(SRC_DIR)/CgiHandler.cpp\
+	$(SRC_DIR)/CgiProcess.cpp\
 	$(HTTP_DIR)/HttpRequest.cpp\
 	$(HTTP_DIR)/HttpResponse.cpp\
 	$(HTTP_DIR)/MethodHandler.cpp\

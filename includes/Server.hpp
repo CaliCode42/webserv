@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:16:04 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/14 12:17:32 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/18 19:01:37 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -67,7 +67,5 @@ public:
 
 	void	checkClientTimeouts();
 };
-
-bool	setNonBlocking(int fd);
 
 #endif
