@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/18 18:50:17 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/18 20:51:46 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/20 18:12:28 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,7 +65,6 @@ public:
 	pid_t				getPid() const;
 	int					getStdinFd() const;
 	int					getStdoutFd() const;
-
 	const std::string&	getOutput() const;
 
 	bool 				isStarted() const;
@@ -77,6 +76,11 @@ public:
 
 	bool	checkProcessStatus();
 	bool	readOutput();
+	bool	writeInput();
+
+	
+	void	closeInput();
+	void	closeOutput();
 };
 
 #endif

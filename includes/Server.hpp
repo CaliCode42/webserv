@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:16:04 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/18 19:01:37 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/20 18:08:43 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,15 +24,23 @@
 #include "../http/MethodHandler.hpp"
 #include "../http/HttpRequest.hpp"
 #include "ServerConfig.hpp"
+#include "CgiProcess.hpp"
+#include "CgiHandler.hpp"
 
 class Server
 {
 private:
 	int							_port;
 	int							_serverSocket;
+
 	std::vector<pollfd>			_fds;
 	std::vector<int>			_clientsToRemove;
 	std::map<int, Client>		_clients;
+
+	std::map<int, CgiProcess*>	_cgiProcesses;
+	std::map<int, int>			_cgiStdinFds;
+	std::map<int, int>			_cgiStdoutFds;
+	
 	ServerConfig				_config;
 	MethodHandler				_handler;
 	
@@ -59,6 +67,7 @@ public:
 
 	void	enableClientWrite(int fd);
 	void	disableClientWrite(int fd);
+	void	disableClientEvents(int fd);
 
 	void	markClientForRemoval(int fd);
 	bool	isMarkedForRemoval(int fd)const;
@@ -66,6 +75,19 @@ public:
 	void	removeClient(int fd);
 
 	void	checkClientTimeouts();
+	void	checkCgiProcesses();
+
+	void	handleCgiEvents(int fd, short revents);
+	void	handleCgiStdinEvent(int fd, short revents);
+	void	handleCgiStdoutEvent(int fd, short revents);
+
+	bool	isCgiStdinFd(int fd) const;
+	bool	isCgiStdoutFd(int fd) const;
+
+	void	addPollFd(int fd, short events);
+	void	removePollFd(int fd);
+
+	bool	startCgiProcess(Client& client, const LocationConfig& location);
 };
 
 #endif

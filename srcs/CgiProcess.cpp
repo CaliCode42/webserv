@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/18 18:50:48 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/18 21:07:39 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/20 17:43:05 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -66,10 +66,23 @@ void	CgiProcess::closeFd(int& fd)
 	}
 }
 
+void	CgiProcess::closeInput()
+{
+	closeFd(_stdinFd);
+	_stdinClosed = true;
+}
+
+void	CgiProcess::closeOutput()
+{
+	closeFd(_stdoutFd);
+	_stdoutClosed = true;
+	updateFinishedState();
+}
+
 CgiProcess::CgiProcess()
-    : _pid(-1), _stdinFd(-1), _stdoutFd(-1), _inputOffset(0), _started(false),
-      _stdinClosed(false), _stdoutClosed(false), _finished(false),
-	  _processExited(false), _exitedNormally(false)
+	: _pid(-1), _stdinFd(-1), _stdoutFd(-1), _exitStatus(-1), _inputOffset(0), _started(false),
+		_stdinClosed(false), _stdoutClosed(false), _finished(false),
+		_processExited(false), _exitedNormally(false)
 {}
 
 CgiProcess::~CgiProcess()
@@ -111,7 +124,7 @@ bool	CgiProcess::isFinished() const
 	return (_finished);
 }
 
-bool CgiProcess::start(const std::string& interpreter,
+bool	CgiProcess::start(const std::string& interpreter,
 	const std::string& scriptPath, const envMap& environment,
 	const std::string& body)
 {
@@ -309,6 +322,8 @@ void CgiProcess::resetProcessState()
 	_stdoutClosed = false;
 	_processExited = false;
 	_finished = false;
+	_exitedNormally = false;
+	_exitStatus = -1;
 }
 
 bool CgiProcess::checkProcessStatus()
@@ -388,4 +403,46 @@ void CgiProcess::updateFinishedState()
 {
 	if (_processExited && _stdoutClosed)
 		_finished = true;
+}
+
+bool	CgiProcess::writeInput()
+{
+	if (_stdinFd == -1 || _stdinClosed)
+		return (true);
+
+	if (_inputOffset >= _input.size())
+	{
+		closeFd(_stdinFd);
+		_stdinClosed = true;
+		return (true);
+	}
+
+	const char	*data = _input.data() + _inputOffset;
+	std::size_t	remaining = _input.size() - _inputOffset;
+
+	ssize_t bytes = write(_stdinFd, data, remaining);
+
+	if (bytes > 0)
+	{
+		_inputOffset += static_cast<std::size_t>(bytes);
+
+		if (_inputOffset == _input.size())
+		{
+			closeFd(_stdinFd);
+			_stdinClosed = true;
+		}
+
+		return (true);
+	}
+
+	if (bytes == -1
+		&& (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR))
+	{
+		return (true);
+	}
+
+	closeFd(_stdinFd);
+	_stdinClosed = true;
+
+	return (false);
 }

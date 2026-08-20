@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:33:43 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/14 17:26:01 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/20 18:09:55 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -127,6 +127,12 @@ void	Server::run()
 				continue ;
 			}
 
+			if (isCgiStdinFd(fd) || isCgiStdoutFd(fd))
+			{
+				handleCgiEvents(fd, revents);
+				continue ;
+			}
+
 			if (revents & (POLLERR | POLLNVAL))
 			{
 				markClientForRemoval(fd);
@@ -149,13 +155,14 @@ void	Server::run()
 				if (it == _clients.end() || !it->second.hasPendingWriteData())
 				{
 					markClientForRemoval(fd);
-					continue;
+					continue ;
 				}
 			}
 
 			if ((revents & POLLOUT) && it != _clients.end() && !isMarkedForRemoval(fd))
 				handleClientWrite(it->second);
 		}
+		checkCgiProcesses();
 		checkClientTimeouts();
 		removeMarkedClients();
 	}
@@ -264,6 +271,24 @@ void	Server::handleClientRead(Client& client)
 		std::cout << "Path: " << request.getUri() << std::endl;
 		std::cout << "Version: " << request.getVersion() << std::endl;
 
+		const LocationConfig	*location = _config.findLocation(request.getUri());
+
+		if (location != NULL && CgiHandler::isCgiRequest(request.getUri(), *location))
+		{
+			if (!startCgiProcess(client, *location))
+			{
+				HttpResponse	response = buildErrorResponse(500);
+
+				client.appendToWriteBuffer(response.serialize());
+				enableClientWrite(client.getFd());
+			}
+			else
+			{
+				disableClientEvents(client.getFd());
+			}
+			return ;
+		}
+
 		HttpResponse	response = _handler.handle(request);
 
 		std::cout << "Append response to client's _writeBuffer: " << client.getFd() << std::endl;
@@ -285,7 +310,7 @@ void	Server::handleClientRead(Client& client)
 	}
 }
 
-void Server::handleClientWrite(Client& client)
+void	Server::handleClientWrite(Client& client)
 {
 	const std::string&	data = client.getWriteBuffer();
 
@@ -348,6 +373,18 @@ void	Server::disableClientWrite(int fd)
 	}
 }
 
+void	Server::disableClientEvents(int fd)
+{
+	for (std::size_t i = 0; i < _fds.size(); ++i)
+	{
+		if (_fds[i].fd == fd)
+		{
+			_fds[i].events = 0;
+			return ;
+		}
+	}
+}
+
 void	Server::markClientForRemoval(int fd)
 {
 	if (!isMarkedForRemoval(fd))
@@ -383,15 +420,7 @@ void	Server::removeClient(int fd)
 	close(fd);
 	_clients.erase(fd);
 
-	for (std::vector<pollfd>::iterator it = _fds.begin();
-			it != _fds.end(); ++it)
-	{
-		if (it->fd == fd)
-		{
-			_fds.erase(it);
-			break;
-		}
-	}
+	removePollFd(fd);
 }
 
 bool	setNonBlocking(int fd)
@@ -419,6 +448,9 @@ void Server::checkClientTimeouts()
 
 	for (std::map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); ++it)
 	{
+		if (_cgiProcesses.find(it->first) != _cgiProcesses.end())
+			continue ;
+
 		std::cout << "fd " << it->first
 			<< " inactive for "
 			<< now - it->second.getLastActivity()
@@ -431,4 +463,201 @@ void Server::checkClientTimeouts()
 			markClientForRemoval(it->first);
 		}
 	}
+}
+
+void	Server::checkCgiProcesses()
+{
+	for (std::map<int, CgiProcess*>::iterator it = _cgiProcesses.begin();
+			it != _cgiProcesses.end(); ++it)
+	{
+		if (it->second != NULL)
+			it->second->checkProcessStatus();
+	}
+}
+
+void	Server::handleCgiEvents(int fd, short revents)
+{
+	if (isCgiStdinFd(fd))
+		handleCgiStdinEvent(fd, revents);
+
+	else if (isCgiStdoutFd(fd))
+		handleCgiStdoutEvent(fd, revents);
+}
+
+void	Server::handleCgiStdinEvent(int fd, short revents)
+{
+	std::map<int, int>::iterator	stdinIt = _cgiStdinFds.find(fd);
+
+	if (stdinIt == _cgiStdinFds.end())
+		return ;
+
+	int	clientFd = stdinIt->second;
+
+	std::map<int, CgiProcess*>::iterator	processIt =
+		_cgiProcesses.find(clientFd);
+
+	if (processIt == _cgiProcesses.end())
+	{
+		removePollFd(fd);
+		_cgiStdinFds.erase(stdinIt);
+		return ;
+	}
+
+	CgiProcess	*process = processIt->second;
+
+	if (revents & (POLLERR | POLLHUP | POLLNVAL))
+	{
+		removePollFd(fd);
+		_cgiStdinFds.erase(stdinIt);
+		return ;
+	}
+
+	if (!(revents & POLLOUT))
+		return ;
+
+	if (!process->writeInput())
+	{
+		process->closeInput();
+		removePollFd(fd);
+		_cgiStdinFds.erase(stdinIt);
+		return ;
+	}
+
+	if (process->getStdinFd() == -1)
+	{
+		removePollFd(fd);
+		_cgiStdinFds.erase(stdinIt);
+	}
+}
+
+void	Server::handleCgiStdoutEvent(int fd, short revents)
+{
+	std::map<int, int>::iterator	stdoutIt = _cgiStdoutFds.find(fd);
+
+	if (stdoutIt == _cgiStdoutFds.end())
+		return ;
+
+	int	clientFd = stdoutIt->second;
+
+	std::map<int, CgiProcess*>::iterator	processIt =
+		_cgiProcesses.find(clientFd);
+
+	if (processIt == _cgiProcesses.end())
+	{
+		removePollFd(fd);
+		_cgiStdoutFds.erase(stdoutIt);
+		return ;
+	}
+
+	CgiProcess	*process = processIt->second;
+
+	if (revents & (POLLERR | POLLNVAL))
+	{
+		process->closeOutput();
+		removePollFd(fd);
+		_cgiStdoutFds.erase(stdoutIt);
+		return ;
+	}
+
+	if (!(revents & (POLLIN | POLLHUP)))
+		return ;
+
+	if (!process->readOutput())
+	{
+		removePollFd(fd);
+		_cgiStdoutFds.erase(stdoutIt);
+		return ;
+	}
+
+	if (process->getStdoutFd() == -1)
+	{
+		removePollFd(fd);
+		_cgiStdoutFds.erase(stdoutIt);
+	}
+}
+
+bool	Server::isCgiStdinFd(int fd) const
+{
+	return (_cgiStdinFds.find(fd) != _cgiStdinFds.end());
+}
+
+bool	Server::isCgiStdoutFd(int fd) const
+{
+	return (_cgiStdoutFds.find(fd) != _cgiStdoutFds.end());
+}
+
+void	Server::addPollFd(int fd, short events)
+{
+	pollfd	pfd;
+
+	pfd.fd = fd;
+	pfd.events = events;
+	pfd.revents = 0;
+
+	_fds.push_back(pfd);
+}
+
+void	Server::removePollFd(int fd)
+{
+	for (std::vector<pollfd>::iterator it = _fds.begin();
+			it != _fds.end(); ++it)
+	{
+		if (it->fd == fd)
+		{
+			_fds.erase(it);
+			return ;
+		}
+	}
+}
+
+bool	Server::startCgiProcess(Client& client, const LocationConfig& location)
+{
+	HttpRequest&	request = client.getRequest();
+	std::string		uri = request.getUri();
+	std::string		interpreter = CgiHandler::getInterpreter(uri, location);
+	std::string		scriptPath = CgiHandler::resolveScriptPath(uri, location);
+
+	if (interpreter.empty() || scriptPath.empty())
+		return (false);
+
+	CgiProcess	*process = new CgiProcess();
+
+	try
+	{
+		CgiProcess::envMap	env = CgiHandler::buildEnvironment(request, uri,
+			location, scriptPath);
+
+		if (!process->start(interpreter, scriptPath, env, request.getBody()))
+		{
+			delete process;
+			return (false);
+		}
+	}
+	catch (...)
+	{
+		delete process;
+		throw;
+	}
+
+	int	clientFd = client.getFd();
+
+	_cgiProcesses[clientFd] = process;
+
+	if (process->getStdinFd() != -1)
+	{
+		int	stdinFd = process->getStdinFd();
+
+		_cgiStdinFds[stdinFd] = clientFd;
+		addPollFd(stdinFd, POLLOUT);
+	}
+
+	if (process->getStdoutFd() != -1)
+	{
+		int	stdoutFd = process->getStdoutFd();
+
+		_cgiStdoutFds[stdoutFd] = clientFd;
+		addPollFd(stdoutFd, POLLIN);
+	}
+
+	return (true);
 }
