@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/22 14:50:12 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/20 18:13:13 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/22 20:31:06 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,10 +14,12 @@
 #include "Server.hpp"
 #include "../http/MethodHandler.hpp"
 #include "../http/HttpRequest.hpp"
+#include "ConfigParser.hpp"
 
 int main()
 {
-	ServerConfig	config;
+	ConfigParser	parser;
+	ServerConfig	config = parser.parse("test.conf");
     Server			server(8080, config);
     try {
 		server.initSocket();

@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:33:43 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/20 18:09:55 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/22 20:32:51 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -271,6 +271,10 @@ void	Server::handleClientRead(Client& client)
 		std::cout << "Path: " << request.getUri() << std::endl;
 		std::cout << "Version: " << request.getVersion() << std::endl;
 
+		std::cout << "Server locations: "
+		  << _config.getLocations().size()
+		  << std::endl;
+
 		const LocationConfig	*location = _config.findLocation(request.getUri());
 
 		if (location != NULL && CgiHandler::isCgiRequest(request.getUri(), *location))
@@ -417,6 +421,9 @@ void Server::removeMarkedClients()
 void	Server::removeClient(int fd)
 {
 	std::cout << "Client disconnected: " << fd << std::endl;
+
+	removeCgiProcess(fd);
+
 	close(fd);
 	_clients.erase(fd);
 
@@ -467,11 +474,44 @@ void Server::checkClientTimeouts()
 
 void	Server::checkCgiProcesses()
 {
-	for (std::map<int, CgiProcess*>::iterator it = _cgiProcesses.begin();
-			it != _cgiProcesses.end(); ++it)
+	std::map<int, CgiProcess*>::iterator	it = _cgiProcesses.begin();
+
+	while (it != _cgiProcesses.end())
 	{
-		if (it->second != NULL)
-			it->second->checkProcessStatus();
+		int			clientFd = it->first;
+		CgiProcess	*process = it->second;
+
+		++it;
+
+		if (process == NULL)
+		{
+			removeCgiProcess(clientFd);
+			continue ;
+		}
+
+		process->checkProcessStatus();
+
+		if (!process->isFinished())
+			continue ;
+
+		std::map<int, Client>::iterator	clientIt =
+			_clients.find(clientFd);
+
+		if (clientIt == _clients.end())
+		{
+			removeCgiProcess(clientFd);
+			continue ;
+		}
+
+		HttpResponse	response;
+
+		if (!buildCgiResponse(process->getOutput(), response))
+			response = buildErrorResponse(500);
+
+		clientIt->second.appendToWriteBuffer(response.serialize());
+		enableClientWrite(clientFd);
+
+		removeCgiProcess(clientFd);
 	}
 }
 
@@ -507,6 +547,7 @@ void	Server::handleCgiStdinEvent(int fd, short revents)
 
 	if (revents & (POLLERR | POLLHUP | POLLNVAL))
 	{
+		process->closeInput();
 		removePollFd(fd);
 		_cgiStdinFds.erase(stdinIt);
 		return ;
@@ -660,4 +701,128 @@ bool	Server::startCgiProcess(Client& client, const LocationConfig& location)
 	}
 
 	return (true);
+}
+
+bool	Server::buildCgiResponse(const std::string& output,
+	HttpResponse& response)
+{
+	std::string::size_type	separatorPos = output.find("\r\n\r\n");
+	std::size_t				separatorLength = 4;
+
+	if (separatorPos == std::string::npos)
+	{
+		separatorPos = output.find("\n\n");
+		separatorLength = 2;
+	}
+
+	if (separatorPos == std::string::npos)
+		return (false);
+
+	std::string	headersPart = output.substr(0, separatorPos);
+	std::string	body = output.substr(separatorPos + separatorLength);
+	std::string	contentType;
+
+	std::istringstream	headersStream(headersPart);
+	std::string			line;
+
+	while (std::getline(headersStream, line))
+	{
+		if (!line.empty() && line[line.size() - 1] == '\r')
+			line.erase(line.size() - 1);
+
+		std::string::size_type	colonPos = line.find(':');
+
+		if (colonPos == std::string::npos)
+			return (false);
+
+		std::string	name = line.substr(0, colonPos);
+		std::string	value = line.substr(colonPos + 1);
+
+		while (!name.empty()
+			&& (name[name.size() - 1] == ' '
+				|| name[name.size() - 1] == '\t'))
+		{
+			name.erase(name.size() - 1);
+		}
+
+		while (!value.empty()
+			&& (value[0] == ' ' || value[0] == '\t'))
+		{
+			value.erase(0, 1);
+		}
+
+		if (name.empty())
+			return (false);
+
+		std::string	lowerName = name;
+
+		for (std::size_t i = 0; i < lowerName.size(); ++i)
+		{
+			lowerName[i] = static_cast<char>(
+				std::tolower(static_cast<unsigned char>(lowerName[i])));
+		}
+
+		if (lowerName == "status")
+		{
+			std::istringstream	statusStream(value);
+			int					statusCode;
+
+			if (!(statusStream >> statusCode)
+				|| statusCode < 100
+				|| statusCode > 599)
+			{
+				return (false);
+			}
+
+			response.setStatus(statusCode);
+		}
+		else if (lowerName == "content-type")
+		{
+			contentType = value;
+		}
+		else if (lowerName != "content-length")
+		{
+			response.setHeader(name, value);
+		}
+	}
+
+	if (contentType.empty())
+		return (false);
+
+	response.setBody(body, contentType);
+
+	return (true);
+}
+
+void	Server::removeCgiProcess(int clientFd)
+{
+	std::map<int, CgiProcess*>::iterator	processIt =
+		_cgiProcesses.find(clientFd);
+
+	if (processIt == _cgiProcesses.end())
+		return ;
+
+	CgiProcess	*process = processIt->second;
+
+	if (process != NULL)
+	{
+		int	stdinFd = process->getStdinFd();
+		int	stdoutFd = process->getStdoutFd();
+
+		if (stdinFd != -1)
+		{
+			removePollFd(stdinFd);
+			_cgiStdinFds.erase(stdinFd);
+		}
+
+		if (stdoutFd != -1)
+		{
+			removePollFd(stdoutFd);
+			_cgiStdoutFds.erase(stdoutFd);
+		}
+
+		delete process;
+	}
+
+	_cgiProcesses.erase(processIt);
 }

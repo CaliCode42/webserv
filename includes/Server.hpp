@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:16:04 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/20 18:08:43 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/22 20:14:59 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,8 @@
 #include <sys/poll.h>
 #include <sys/socket.h>
 #include <fcntl.h>
+#include <sstream>
+#include <cctype>
 #include "Client.hpp"
 #include "../http/MethodHandler.hpp"
 #include "../http/HttpRequest.hpp"
@@ -88,6 +90,8 @@ public:
 	void	removePollFd(int fd);
 
 	bool	startCgiProcess(Client& client, const LocationConfig& location);
+	bool	buildCgiResponse(const std::string& output, HttpResponse& response);
+	void	removeCgiProcess(int clientFd);
 };
 
 #endif
