@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/17 12:26:19 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/17 18:18:34 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/24 19:40:49 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,14 +16,6 @@
 #include <sstream>
 #include <stdexcept>
 #include <cctype>
-
-ConfigParser::ConfigParser() : _pos(0)
-{
-}
-
-ConfigParser::~ConfigParser()
-{
-}
 
 ServerConfig	ConfigParser::parse(const std::string& filename)
 {
@@ -104,106 +96,103 @@ void	ConfigParser::tokenize(const std::string& content)
 
 bool	ConfigParser::hasMoreTokens() const
 {
-    return (_pos < _tokens.size());
+	return (_pos < _tokens.size());
 }
 
 const	std::string& ConfigParser::currentToken() const
 {
-    if (!hasMoreTokens())
-        throw std::runtime_error("Unexpected end of configuration");
+	if (!hasMoreTokens())
+		throw std::runtime_error("Unexpected end of configuration");
 
-    return (_tokens[_pos]);
-}
-
-void	ConfigParser::advance()
-{
-    if (hasMoreTokens())
-        ++_pos;
+	return (_tokens[_pos]);
 }
 
 const std::string&	ConfigParser::nextToken()
 {
-    advance();
-    return (currentToken());
+	advance();
+	
+	return (currentToken());
+}
+
+void	ConfigParser::advance()
+{
+	if (hasMoreTokens())
+		++_pos;
 }
 
 void	ConfigParser::expect(const std::string& expected)
 {
-    if (!hasMoreTokens() || currentToken() != expected)
-    {
-        throw std::runtime_error(
-            "Expected '" + expected + "' in configuration");
-    }
+	if (!hasMoreTokens() || currentToken() != expected)
+		throw std::runtime_error("Expected '" + expected + "' in configuration");
 
-    advance();
+	advance();
 }
 
 void	ConfigParser::parseLocation(ServerConfig& config)
 {
-    LocationConfig location;
+	LocationConfig location;
 
-    expect("location");
+	expect("location");
 
-    if (!hasMoreTokens())
-        throw std::runtime_error("Missing location path");
+	if (!hasMoreTokens())
+		throw std::runtime_error("Missing location path");
 
-    location.setPath(currentToken());
-    advance();
+	location.setPath(currentToken());
+	advance();
 
-    expect("{");
+	expect("{");
 
-    while (hasMoreTokens() && currentToken() != "}")
-        parseLocationDirective(location);
+	while (hasMoreTokens() && currentToken() != "}")
+		parseLocationDirective(location);
 
-    expect("}");
+	expect("}");
 
-    config.addLocations(location);
+	config.addLocations(location);
 }
 
 void	ConfigParser::parseLocationDirective(LocationConfig& location)
 {
-    if (currentToken() == "root")
-        parseRootDirective(location);
-    else if (currentToken() == "cgi")
-        parseCgiDirective(location);
-    else
-        throw std::runtime_error(
-            "Unknown location directive: " + currentToken());
+	if (currentToken() == "root")
+		parseRootDirective(location);
+	else if (currentToken() == "cgi")
+		parseCgiDirective(location);
+	else
+		throw std::runtime_error("Unknown location directive: " + currentToken());
 }
 
 void	ConfigParser::parseRootDirective(LocationConfig& location)
 {
-    expect("root");
+	expect("root");
 
-    if (!hasMoreTokens())
-        throw std::runtime_error("Missing root value");
+	if (!hasMoreTokens())
+		throw std::runtime_error("Missing root value");
 
-    location.setRoot(currentToken());
-    advance();
+	location.setRoot(currentToken());
+	advance();
 
-    expect(";");
+	expect(";");
 }
 
 void	ConfigParser::parseCgiDirective(LocationConfig& location)
 {
-    std::string extension;
-    std::string executable;
+	std::string extension;
+	std::string executable;
 
-    expect("cgi");
+	expect("cgi");
 
-    if (!hasMoreTokens())
-        throw std::runtime_error("Missing CGI extension");
+	if (!hasMoreTokens())
+		throw std::runtime_error("Missing CGI extension");
 
-    extension = currentToken();
-    advance();
+	extension = currentToken();
+	advance();
 
-    if (!hasMoreTokens())
-        throw std::runtime_error("Missing CGI executable");
+	if (!hasMoreTokens())
+		throw std::runtime_error("Missing CGI executable");
 
-    executable = currentToken();
-    advance();
+	executable = currentToken();
+	advance();
 
-    expect(";");
+	expect(";");
 
-    location.addCgiHandler(extension, executable);
+	location.addCgiHandler(extension, executable);
 }

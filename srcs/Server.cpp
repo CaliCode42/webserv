@@ -6,25 +6,38 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:33:43 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/22 20:32:51 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/24 19:51:00 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Server.hpp"
 #include "Utils.hpp"
-#include "Client.hpp"
-#include "../http/MethodHandler.hpp"
-#include "../http/HttpRequest.hpp"
+
 #include <unistd.h>
 #include <netinet/in.h>
 #include <string>
 #include <cstring>
 #include <cerrno>
+#include <signal.h>
 
-// Server::Server(int port): _port(port), _serverSocket(-1) 
-// {
-// 	std::cout << "[Server] constructor called: server created" << std::endl;
-// }
+// Temporary :
+// Just to test Error handling,
+// Later this must not be the responsibility of Server.
+HttpResponse	Server::buildErrorResponse(int statusCode)
+{
+	HttpResponse response;
+
+	response.setStatus(statusCode);
+	response.setBody(
+		"<html><body><h1>" +
+		turnIntoString(statusCode) + " " +
+		HttpResponse::reasonPhrase(statusCode) +
+		"</h1></body></html>",
+		"text/html"
+	);
+
+	return (response);
+}
 
 Server::Server(int port, const ServerConfig& config): _port(port), _serverSocket(-1),
 	_config(config), _handler(_config)
@@ -48,7 +61,8 @@ void	Server::initSocket()
 	if (_serverSocket == -1)
 		throw std::runtime_error("failed to init socket.");
 
-	sockaddr_in addr;
+	sockaddr_in	addr;
+	
 	std::memset(&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(_port);
@@ -97,9 +111,13 @@ void	Server::initSocket()
 
 void	Server::run()
 {
+	if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
+		throw std::runtime_error("failed to ignore SIGPIPE");
+
 	while (true)
 	{
 		int result = poll(&_fds[0], static_cast<nfds_t>(_fds.size()), _POLL_TIMEOUT);
+
 		if (result < 0)
 		{
 			if (errno == EINTR)
@@ -175,22 +193,14 @@ void	Server::acceptClient()
 		int clientFd = accept(_serverSocket, NULL, NULL);
 
 		if (clientFd < 0)
-		{
-			if (errno == EAGAIN || errno == EWOULDBLOCK)
-				return ;
-
-			if (errno == EINTR)
-				continue ;
-			
-			std::cerr << "accept() failed: " << strerror(errno) << std::endl;
 			return ;
-		}
 
 		if (!setNonBlocking(clientFd))
 		{
 			close(clientFd);
 			continue ;
 		}
+		
 		pollfd	client;
 		
 		client.fd = clientFd;
@@ -204,42 +214,14 @@ void	Server::acceptClient()
 	}
 }
 
-// Temporary :
-// Just to test Error handling,
-// Later this must not be the responsibility of Server.
-HttpResponse	Server::buildErrorResponse(int statusCode)
-{
-	HttpResponse response;
-
-	response.setStatus(statusCode);
-	response.setBody(
-		"<html><body><h1>" +
-		turnIntoString(statusCode) + " " +
-		HttpResponse::reasonPhrase(statusCode) +
-		"</h1></body></html>",
-		"text/html"
-	);
-
-	return (response);
-}
-
 void	Server::handleClientRead(Client& client)
 {
 	char buffer[4096];
 
 	ssize_t	bytes = recv(client.getFd(), buffer, sizeof(buffer), 0);
 
-	if (bytes == 0)
+	if (bytes <= 0)
 	{
-		markClientForRemoval(client.getFd());
-		return ;
-	}
-
-	if (bytes < 0)
-	{
-		if (errno == EAGAIN || errno == EINTR || errno == EWOULDBLOCK)
-			return ;
-		
 		markClientForRemoval(client.getFd());
 		return ;
 	}
@@ -262,19 +244,9 @@ void	Server::handleClientRead(Client& client)
 	}
 
 	if (!request.isComplete())
-	{
 		return ;
-	}
 
 	try {
-		std::cout << "Method: " << request.getMethod() << std::endl;
-		std::cout << "Path: " << request.getUri() << std::endl;
-		std::cout << "Version: " << request.getVersion() << std::endl;
-
-		std::cout << "Server locations: "
-		  << _config.getLocations().size()
-		  << std::endl;
-
 		const LocationConfig	*location = _config.findLocation(request.getUri());
 
 		if (location != NULL && CgiHandler::isCgiRequest(request.getUri(), *location))
@@ -287,16 +259,13 @@ void	Server::handleClientRead(Client& client)
 				enableClientWrite(client.getFd());
 			}
 			else
-			{
 				disableClientEvents(client.getFd());
-			}
+
 			return ;
 		}
 
 		HttpResponse	response = _handler.handle(request);
 
-		std::cout << "Append response to client's _writeBuffer: " << client.getFd() << std::endl;
-		
 		client.appendToWriteBuffer(response.serialize());
 		enableClientWrite(client.getFd());
 	}
@@ -326,24 +295,14 @@ void	Server::handleClientWrite(Client& client)
 
 	ssize_t	bytesSent = send(client.getFd(), data.c_str(), data.size(), MSG_NOSIGNAL);
 
-	if (bytesSent < 0)
-	{
-		if (errno == EAGAIN || errno == EINTR || errno == EWOULDBLOCK)
-			return ;
-		
-		markClientForRemoval(client.getFd());
-		return ;
-	}
-	else if (bytesSent > 0)
-	{
-		client.updateActivity();
-		client.removeSentBytes(static_cast<std::size_t>(bytesSent));
-	}
-	else // bytesSent == 0
+	if (bytesSent <= 0)
 	{
 		markClientForRemoval(client.getFd());
 		return ;
 	}
+	
+	client.updateActivity();
+	client.removeSentBytes(static_cast<std::size_t>(bytesSent));
 
 	if (!client.hasPendingWriteData())
 	{
@@ -398,8 +357,7 @@ void	Server::markClientForRemoval(int fd)
 bool Server::isMarkedForRemoval(int fd) const
 {
 	for (std::vector<int>::const_iterator it = _clientsToRemove.begin();
-		 it != _clientsToRemove.end();
-		 ++it)
+		it != _clientsToRemove.end(); ++it)
 	{
 		if (*it == fd)
 			return true;
@@ -411,8 +369,7 @@ bool Server::isMarkedForRemoval(int fd) const
 void Server::removeMarkedClients()
 {
 	for (std::vector<int>::const_iterator it = _clientsToRemove.begin();
-		 it != _clientsToRemove.end();
-		 ++it)
+		it != _clientsToRemove.end(); ++it)
 		removeClient(*it);
 
 	_clientsToRemove.clear();
@@ -430,25 +387,6 @@ void	Server::removeClient(int fd)
 	removePollFd(fd);
 }
 
-bool	setNonBlocking(int fd)
-{
-	int flags = fcntl(fd, F_GETFL, 0);
-
-	if (flags == -1)
-	{
-		throw std::runtime_error("fcntl(F_GETFL) failed");
-		return (false);
-	}
-
-	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
-	{
-		throw std::runtime_error("fcntl(F_SETFL) failed");
-		return (false);
-	}
-	return (true);
-		
-}
-
 void Server::checkClientTimeouts()
 {
 	std::time_t	now = std::time(NULL);
@@ -458,23 +396,15 @@ void Server::checkClientTimeouts()
 		if (_cgiProcesses.find(it->first) != _cgiProcesses.end())
 			continue ;
 
-		std::cout << "fd " << it->first
-			<< " inactive for "
-			<< now - it->second.getLastActivity()
-			<< " seconds"
-			<< std::endl;
-
 		if (now - it->second.getLastActivity() >= _CLIENT_TIMEOUT)
-		{
-			std::cout << "Timeout fd " << it->first << std::endl;
 			markClientForRemoval(it->first);
-		}
 	}
 }
 
 void	Server::checkCgiProcesses()
 {
 	std::map<int, CgiProcess*>::iterator	it = _cgiProcesses.begin();
+	std::time_t								now = std::time(NULL);
 
 	while (it != _cgiProcesses.end())
 	{
@@ -491,11 +421,27 @@ void	Server::checkCgiProcesses()
 
 		process->checkProcessStatus();
 
+		if (!process->isFinished() && process->getStartTime() != 0
+			&& now - process->getStartTime() >= _CGI_TIMEOUT)
+		{
+			std::map<int, Client>::iterator	clientIt = _clients.find(clientFd);
+
+			if (clientIt != _clients.end())
+			{
+				HttpResponse	response = buildErrorResponse(500);
+
+				clientIt->second.appendToWriteBuffer(response.serialize());
+				enableClientWrite(clientFd);
+			}
+
+			removeCgiProcess(clientFd);
+			continue ;
+		}
+
 		if (!process->isFinished())
 			continue ;
 
-		std::map<int, Client>::iterator	clientIt =
-			_clients.find(clientFd);
+		std::map<int, Client>::iterator	clientIt = _clients.find(clientFd);
 
 		if (clientIt == _clients.end())
 		{
@@ -505,7 +451,10 @@ void	Server::checkCgiProcesses()
 
 		HttpResponse	response;
 
-		if (!buildCgiResponse(process->getOutput(), response))
+		if (!process->exitedNormally() || process->getExitStatus() != 0)
+			response = buildErrorResponse(500);
+
+		else if (!buildCgiResponse(process->getOutput(), response))
 			response = buildErrorResponse(500);
 
 		clientIt->second.appendToWriteBuffer(response.serialize());
@@ -533,8 +482,7 @@ void	Server::handleCgiStdinEvent(int fd, short revents)
 
 	int	clientFd = stdinIt->second;
 
-	std::map<int, CgiProcess*>::iterator	processIt =
-		_cgiProcesses.find(clientFd);
+	std::map<int, CgiProcess*>::iterator	processIt = _cgiProcesses.find(clientFd);
 
 	if (processIt == _cgiProcesses.end())
 	{
@@ -580,8 +528,7 @@ void	Server::handleCgiStdoutEvent(int fd, short revents)
 
 	int	clientFd = stdoutIt->second;
 
-	std::map<int, CgiProcess*>::iterator	processIt =
-		_cgiProcesses.find(clientFd);
+	std::map<int, CgiProcess*>::iterator	processIt = _cgiProcesses.find(clientFd);
 
 	if (processIt == _cgiProcesses.end())
 	{
@@ -600,21 +547,31 @@ void	Server::handleCgiStdoutEvent(int fd, short revents)
 		return ;
 	}
 
-	if (!(revents & (POLLIN | POLLHUP)))
-		return ;
-
-	if (!process->readOutput())
+	if ((revents & POLLIN))
 	{
-		removePollFd(fd);
-		_cgiStdoutFds.erase(stdoutIt);
+		if (!process->readOutput())
+		{
+			removePollFd(fd);
+			_cgiStdoutFds.erase(stdoutIt);
+			return ;
+		}
+	
+		if (process->getStdoutFd() == -1)
+		{
+			removePollFd(fd);
+			_cgiStdoutFds.erase(stdoutIt);
+		}
+
 		return ;
 	}
 
-	if (process->getStdoutFd() == -1)
+	if (revents & POLLHUP)
 	{
+		process->closeOutput();
 		removePollFd(fd);
 		_cgiStdoutFds.erase(stdoutIt);
 	}
+
 }
 
 bool	Server::isCgiStdinFd(int fd) const
@@ -738,18 +695,12 @@ bool	Server::buildCgiResponse(const std::string& output,
 		std::string	name = line.substr(0, colonPos);
 		std::string	value = line.substr(colonPos + 1);
 
-		while (!name.empty()
-			&& (name[name.size() - 1] == ' '
-				|| name[name.size() - 1] == '\t'))
-		{
+		while (!name.empty() && (name[name.size() - 1] == ' '
+			|| name[name.size() - 1] == '\t'))
 			name.erase(name.size() - 1);
-		}
 
-		while (!value.empty()
-			&& (value[0] == ' ' || value[0] == '\t'))
-		{
+		while (!value.empty() && (value[0] == ' ' || value[0] == '\t'))
 			value.erase(0, 1);
-		}
 
 		if (name.empty())
 			return (false);
@@ -767,23 +718,15 @@ bool	Server::buildCgiResponse(const std::string& output,
 			std::istringstream	statusStream(value);
 			int					statusCode;
 
-			if (!(statusStream >> statusCode)
-				|| statusCode < 100
-				|| statusCode > 599)
-			{
+			if (!(statusStream >> statusCode) || statusCode < 100 || statusCode > 599)
 				return (false);
-			}
 
 			response.setStatus(statusCode);
 		}
 		else if (lowerName == "content-type")
-		{
 			contentType = value;
-		}
 		else if (lowerName != "content-length")
-		{
 			response.setHeader(name, value);
-		}
 	}
 
 	if (contentType.empty())
@@ -796,8 +739,7 @@ bool	Server::buildCgiResponse(const std::string& output,
 
 void	Server::removeCgiProcess(int clientFd)
 {
-	std::map<int, CgiProcess*>::iterator	processIt =
-		_cgiProcesses.find(clientFd);
+	std::map<int, CgiProcess*>::iterator	processIt = _cgiProcesses.find(clientFd);
 
 	if (processIt == _cgiProcesses.end())
 		return ;
@@ -825,4 +767,22 @@ void	Server::removeCgiProcess(int clientFd)
 	}
 
 	_cgiProcesses.erase(processIt);
+}
+
+bool	setNonBlocking(int fd)
+{
+	int flags = fcntl(fd, F_GETFL, 0);
+
+	if (flags == -1)
+	{
+		throw std::runtime_error("fcntl(F_GETFL) failed");
+		return (false);
+	}
+
+	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
+	{
+		throw std::runtime_error("fcntl(F_SETFL) failed");
+		return (false);
+	}
+	return (true);
 }

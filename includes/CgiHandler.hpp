@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/18 16:39:17 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/18 18:30:21 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/24 19:29:16 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,7 +25,8 @@ class CgiHandler
 {
 private:
 	static std::string	getExtension(const std::string& uri);
-
+	static std::string	toCgiHeaderName(const std::string& headerName);
+	
 public:
 	CgiHandler() {};
 	~CgiHandler() {};

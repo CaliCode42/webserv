@@ -6,11 +6,13 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/18 16:46:54 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/18 18:07:36 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/24 19:49:52 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "CgiHandler.hpp"
+#include "Utils.hpp"
+#include <cctype>
 
 std::string	CgiHandler::getExtension(const std::string& uri)
 {
@@ -31,6 +33,23 @@ std::string	CgiHandler::getExtension(const std::string& uri)
 		return ("");
 
 	return (path.substr(dotPos));
+}
+
+std::string	CgiHandler::toCgiHeaderName(const std::string& headerName)
+{
+	std::string	name = "HTTP_";
+
+	for (std::size_t i = 0; i < headerName.size(); ++i)
+	{
+		char	c = headerName[i];
+
+		if (c == '-')
+			name += '_';
+		else
+			name += static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
+	}
+
+	return (name);
 }
 
 bool	CgiHandler::isCgiRequest(const std::string& uri, const LocationConfig& location)
@@ -75,42 +94,58 @@ std::string	CgiHandler::getQueryString(const std::string& uri)
 
 std::string	CgiHandler::resolveScriptPath(const std::string& uri, const LocationConfig& location)
 {
-    std::string	path = getUriPath(uri);
-    const std::string&	locationPath = location.getPath();
-    const std::string&	root = location.getRoot();
+	std::string	path = getUriPath(uri);
+	const std::string&	locationPath = location.getPath();
+	const std::string&	root = location.getRoot();
 
-    if (path.compare(0, locationPath.size(), locationPath) != 0)
-        return ("");
+	if (path.compare(0, locationPath.size(), locationPath) != 0)
+		return ("");
 
-    std::string relativePath = path.substr(locationPath.size());
+	std::string relativePath = path.substr(locationPath.size());
 
-    if (!relativePath.empty() && relativePath[0] != '/')
-        relativePath = "/" + relativePath;
+	if (!relativePath.empty() && relativePath[0] != '/')
+		relativePath = "/" + relativePath;
 
-    if (!root.empty() && root[root.size() - 1] == '/'
-        && !relativePath.empty() && relativePath[0] == '/')
-    {
-        return (root + relativePath.substr(1));
-    }
+	if (!root.empty() && root[root.size() - 1] == '/' && !relativePath.empty() && relativePath[0] == '/')
+		return (root + relativePath.substr(1));
 
-    return (root + relativePath);
+	return (root + relativePath);
 }
 
 envMap	CgiHandler::buildEnvironment(const HttpRequest& request, const std::string& uri,
-    const LocationConfig& location, const std::string& scriptPath)
+	const LocationConfig& location, const std::string& scriptPath)
 {
-    envMap env;
+	envMap env;
 
-    (void)location;
+	(void)location;
 
-    env["REQUEST_METHOD"] = request.getMethod();
-    env["QUERY_STRING"] = getQueryString(uri);
-    env["SCRIPT_FILENAME"] = scriptPath;
-    env["SCRIPT_NAME"] = getUriPath(uri);
-    env["SERVER_PROTOCOL"] = request.getVersion();
+	env["REQUEST_METHOD"] = request.getMethod();
+	env["QUERY_STRING"] = getQueryString(uri);
+	env["SCRIPT_FILENAME"] = scriptPath;
+	env["SCRIPT_NAME"] = getUriPath(uri);
+	env["SERVER_PROTOCOL"] = request.getVersion();
 
-    env["CONTENT_LENGTH"] = request.getHeader("content-length");
-    env["CONTENT_TYPE"] = request.getHeader("content-type");
+	if (!request.getBody().empty())
+		env["CONTENT_LENGTH"] = turnIntoString(request.getBody().size());
+	else
+		env["CONTENT_LENGTH"] = "";
 
-    return (env);
+	env["CONTENT_TYPE"] = request.getHeader("content-type");
+
+	const std::map<std::string, std::string>&	headers =
+	request.getHeaders();
+
+	for (std::map<std::string, std::string>::const_iterator it = headers.begin();
+		it != headers.end(); ++it)
+	{
+		if (it->first == "content-length"
+			|| it->first == "content-type")
+		{
+			continue ;
+		}
+
+		env[toCgiHeaderName(it->first)] = it->second;
+	}
+
+	return (env);
 }

@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/20 15:35:09 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/17 18:32:02 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/24 19:29:41 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,10 +27,8 @@ private:
 	locationVector	_locations;
 
 public:
-	ServerConfig();
-	// ServerConfig(const ServerConfig& other);
-	// ServerConfig& operator=(const ServerConfig& other);
-	~ServerConfig();
+	ServerConfig() : _root("www") {};
+	~ServerConfig() {};
 
 	std::string				getRoot()const;
 	void					setRoot(const std::string& root);

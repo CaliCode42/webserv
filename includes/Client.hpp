@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:16:17 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/14 12:17:23 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/24 19:29:25 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,26 +28,21 @@ private:
 
 public:
 
-
-	Client();
-	Client(int fd);
-	// Client(const Client& other);
-	// Client& operator=(const Client& other);
-	~Client();
+	Client() : _fd(-1), _lastActivity(std::time(NULL)) {};
+	Client(int fd) : _fd(fd), _lastActivity(std::time(NULL)) {}
+	~Client() {};
 
 	int					getFd() const;
-
 	const std::string&	getWriteBuffer()const;
-
 	HttpRequest&		getRequest();
+	std::time_t 		getLastActivity() const;
 	
 	void				appendToWriteBuffer(const std::string &data);
 	
 	bool 				hasPendingWriteData() const;
-    void				removeSentBytes(std::size_t count);
+	void				removeSentBytes(std::size_t count);
 
 	void        		updateActivity();
-	std::time_t 		getLastActivity() const;
 };
 
 #endif

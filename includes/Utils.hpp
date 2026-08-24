@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/23 10:52:18 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/18 19:01:48 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/24 19:29:44 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,9 +19,9 @@
 template <typename T>
 std::string turnIntoString(T value)
 {
-    std::stringstream ss;
-    ss << value;
-    return (ss.str());
+	std::stringstream ss;
+	ss << value;
+	return (ss.str());
 }
 
 bool	setNonBlocking(int fd);

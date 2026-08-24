@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/17 12:22:29 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/17 18:24:35 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/24 19:29:28 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,8 +43,8 @@ private:
 	void				parseCgiDirective(LocationConfig& location);
 
 public:
-	ConfigParser();
-	~ConfigParser();
+	ConfigParser() : _pos(0) {};
+	~ConfigParser() {};
 
 	ServerConfig			parse(const std::string& filename);
 

@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:16:04 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/22 20:14:59 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/24 19:29:36 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,9 +22,10 @@
 #include <fcntl.h>
 #include <sstream>
 #include <cctype>
+
 #include "Client.hpp"
-#include "../http/MethodHandler.hpp"
-#include "../http/HttpRequest.hpp"
+#include "MethodHandler.hpp"
+#include "HttpRequest.hpp"
 #include "ServerConfig.hpp"
 #include "CgiProcess.hpp"
 #include "CgiHandler.hpp"
@@ -48,14 +49,12 @@ private:
 	
 	static const std::time_t	_CLIENT_TIMEOUT = 10;
 	static const std::time_t	_POLL_TIMEOUT = 1000;
+	static const std::time_t	_CGI_TIMEOUT = 5;
 
 	HttpResponse	buildErrorResponse(int statusCode);
 
 public:
-	// Server(int port);
 	Server(int port, const ServerConfig& config);
-	// Server(const Server& other);
-	// Server& operator=(const Server& other);
 	~Server();
 
 	void	initSocket();

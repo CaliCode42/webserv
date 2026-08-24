@@ -196,7 +196,7 @@ fi
 print_title "${TEST_NUMBER}. GET PNG Content-Type"
 TEST_NUMBER=$((TEST_NUMBER + 1))
 
-headers="$(curl -sS -D - -o /dev/null "${BASE_URL}/Undead.png" 2>/dev/null)"
+headers="$(curl -sS -D - -o /dev/null "${BASE_URL}/images/private/Undead.png" 2>/dev/null)"
 status="$(printf "%s" "$headers" | head -n 1 | awk '{print $2}')"
 
 if [ "$status" = "200" ]; then
@@ -252,6 +252,7 @@ else
     fail "Server is no longer running after GET tests"
 fi
 
+
 print_title "${TEST_NUMBER}. Valid raw HTTP request"
 TEST_NUMBER=$((TEST_NUMBER + 1))
 
@@ -267,6 +268,7 @@ if grep -q '^HTTP/' "$response_file"; then
 else
     fail "No HTTP status line detected"
 fi
+
 
 print_title "${TEST_NUMBER}. Request fragmentation"
 TEST_NUMBER=$((TEST_NUMBER + 1))
@@ -289,6 +291,7 @@ if grep -q '^HTTP/' "$fragmented_response"; then
 else
     fail "The fragmented request did not produce an HTTP response"
 fi
+
 
 print_title "${TEST_NUMBER}. Fragmentation at difficult boundaries"
 TEST_NUMBER=$((TEST_NUMBER + 1))
@@ -315,6 +318,7 @@ else
     fail "Fine-grained fragmentation did not produce an HTTP response"
 fi
 
+
 print_title "${TEST_NUMBER}. Incomplete request"
 TEST_NUMBER=$((TEST_NUMBER + 1))
 
@@ -338,6 +342,7 @@ else
     skip "timeout command unavailable: incomplete request test skipped"
 fi
 
+
 print_title "${TEST_NUMBER}. Malformed header"
 TEST_NUMBER=$((TEST_NUMBER + 1))
 
@@ -360,6 +365,7 @@ else
     fail "The server no longer responds after a malformed request"
 fi
 
+
 print_title "${TEST_NUMBER}. Unsupported method"
 TEST_NUMBER=$((TEST_NUMBER + 1))
 
@@ -377,6 +383,7 @@ elif [ ! -s "$unsupported_response" ]; then
 else
     fail "PUT produces an unexpected response"
 fi
+
 
 print_title "${TEST_NUMBER}. Two clients in parallel"
 TEST_NUMBER=$((TEST_NUMBER + 1))
@@ -408,6 +415,7 @@ else
     skip "timeout command unavailable: multi-client test skipped"
 fi
 
+
 print_title "${TEST_NUMBER}. Large file / complete transfer"
 TEST_NUMBER=$((TEST_NUMBER + 1))
 
@@ -429,6 +437,7 @@ else
     skip "${BIGFILE_PATH} not found"
 fi
 
+
 print_title "${TEST_NUMBER}. Successive connections"
 TEST_NUMBER=$((TEST_NUMBER + 1))
 
@@ -449,6 +458,7 @@ else
     fail "${success_count}/10 successive connections succeeded"
 fi
 
+
 print_title "${TEST_NUMBER}. Immediate disconnection"
 TEST_NUMBER=$((TEST_NUMBER + 1))
 
@@ -464,6 +474,7 @@ if command -v timeout >/dev/null 2>&1; then
 else
     skip "timeout command unavailable: disconnection test skipped"
 fi
+
 
 print_title "${TEST_NUMBER}. Client disconnect during large response"
 TEST_NUMBER=$((TEST_NUMBER + 1))
@@ -484,6 +495,7 @@ if [ -f "$BIGFILE_PATH" ] && command -v timeout >/dev/null 2>&1; then
 else
     skip "Large file or timeout command unavailable"
 fi
+
 
 print_title "${TEST_NUMBER}. Slow fragmented request"
 TEST_NUMBER=$((TEST_NUMBER + 1))
@@ -512,6 +524,7 @@ else
     fail "Slow fragmented request did not produce an HTTP response"
 fi
 
+
 print_title "${TEST_NUMBER}. Many successive connections"
 TEST_NUMBER=$((TEST_NUMBER + 1))
 
@@ -538,6 +551,7 @@ if [ "$success_count" -eq "$TOTAL_REQUESTS" ]; then
 else
     fail "Only ${success_count}/${TOTAL_REQUESTS} successive connections succeeded"
 fi
+
 
 print_title "${TEST_NUMBER}. Concurrent clients"
 TEST_NUMBER=$((TEST_NUMBER + 1))
@@ -591,6 +605,7 @@ else
     fail "Server stopped responding after concurrent client load"
 fi
 
+
 print_title "${TEST_NUMBER}. Concurrent large file downloads"
 TEST_NUMBER=$((TEST_NUMBER + 1))
 
@@ -638,6 +653,7 @@ else
     skip "${BIGFILE_PATH} not found"
 fi
 
+
 print_title "${TEST_NUMBER}. Oversized request line"
 TEST_NUMBER=$((TEST_NUMBER + 1))
 
@@ -671,6 +687,7 @@ if command -v timeout >/dev/null 2>&1; then
 else
     skip "timeout command unavailable: oversized request line test skipped"
 fi
+
 
 print_title "${TEST_NUMBER}. Oversized headers"
 TEST_NUMBER=$((TEST_NUMBER + 1))
@@ -711,6 +728,7 @@ else
     skip "timeout command unavailable: oversized headers test skipped"
 fi
 
+
 print_title "${TEST_NUMBER}. POST creates uploads directory"
 TEST_NUMBER=$((TEST_NUMBER + 1))
 
@@ -741,6 +759,7 @@ if [ -f "www/uploads/auto_create_upload.txt" ]; then
 else
     fail "Uploaded file was not created inside uploads directory"
 fi
+
 
 print_title "${TEST_NUMBER}. Transfer-Encoding case insensitive"
 TEST_NUMBER=$((TEST_NUMBER + 1))
@@ -793,6 +812,7 @@ else
     fail "Chunked request with trailers returns ${status} instead of 201"
 fi
 
+
 print_title "${TEST_NUMBER}. Invalid chunk terminator"
 TEST_NUMBER=$((TEST_NUMBER + 1))
 
@@ -808,6 +828,7 @@ if [ "$status" = "400" ]; then
 else
     fail "Invalid chunk terminator returns ${status} instead of 400"
 fi
+
 
 print_title "${TEST_NUMBER}. POST text file"
 TEST_NUMBER=$((TEST_NUMBER + 1))
@@ -879,6 +900,7 @@ else
     fail "GET deleted file returns ${status} instead of 404"
 fi
 
+
 print_title "${TEST_NUMBER}. DELETE missing file"
 TEST_NUMBER=$((TEST_NUMBER + 1))
 
@@ -894,6 +916,7 @@ if [ "$status" = "404" ]; then
 else
     fail "DELETE missing file returns ${status} instead of 404"
 fi
+
 
 print_title "${TEST_NUMBER}. Content-Length at body size limit"
 TEST_NUMBER=$((TEST_NUMBER + 1))
@@ -1030,6 +1053,7 @@ else
     fail "Server stopped responding after body size limit tests"
 fi
 
+
 print_title "${TEST_NUMBER}. Idle client timeout"
 TEST_NUMBER=$((TEST_NUMBER + 1))
 
@@ -1113,6 +1137,7 @@ else
     printf '%s\n' "$(cat "${ACTIVE_OUTPUT}")"
 fi
 
+
 print_title "${TEST_NUMBER}. Idle socket is closed by server"
 TEST_NUMBER=$((TEST_NUMBER + 1))
 
@@ -1131,6 +1156,7 @@ else
     wait "$nc_pid" 2>/dev/null || true
     pass "Idle socket is closed by server after timeout"
 fi
+
 
 print_title "${TEST_NUMBER}. Incomplete request socket is closed"
 TEST_NUMBER=$((TEST_NUMBER + 1))
@@ -1159,35 +1185,6 @@ else
     fail "Could not open socket for incomplete request timeout test"
 fi
 
-print_title "${TEST_NUMBER}. Other clients do not refresh idle timeout"
-TEST_NUMBER=$((TEST_NUMBER + 1))
-
-IDLE_OUTPUT="${TMP_DIR}/independent_idle_socket.txt"
-
-nc "$HOST" "$PORT" > "${IDLE_OUTPUT}" 2>/dev/null &
-idle_pid=$!
-
-i=0
-while [ "$i" -lt 12 ]; do
-    status="$(http_status "${BASE_URL}/index.html")"
-
-    if [ "$status" != "200" ]; then
-        fail "Concurrent GET returned ${status} during idle timeout test"
-        break
-    fi
-
-    sleep 1
-    i=$((i + 1))
-done
-
-if kill -0 "$idle_pid" 2>/dev/null; then
-    fail "Idle client survived because of unrelated server activity"
-    kill "$idle_pid" 2>/dev/null || true
-    wait "$idle_pid" 2>/dev/null || true
-else
-    wait "$idle_pid" 2>/dev/null || true
-    pass "Other clients do not refresh idle client's timeout"
-fi
 
 print_title "${TEST_NUMBER}. Other clients do not refresh idle timeout"
 TEST_NUMBER=$((TEST_NUMBER + 1))
@@ -1218,6 +1215,38 @@ else
     wait "$idle_pid" 2>/dev/null || true
     pass "Other clients do not refresh idle client's timeout"
 fi
+
+
+print_title "${TEST_NUMBER}. Other clients do not refresh idle timeout"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+IDLE_OUTPUT="${TMP_DIR}/independent_idle_socket.txt"
+
+nc "$HOST" "$PORT" > "${IDLE_OUTPUT}" 2>/dev/null &
+idle_pid=$!
+
+i=0
+while [ "$i" -lt 12 ]; do
+    status="$(http_status "${BASE_URL}/index.html")"
+
+    if [ "$status" != "200" ]; then
+        fail "Concurrent GET returned ${status} during idle timeout test"
+        break
+    fi
+
+    sleep 1
+    i=$((i + 1))
+done
+
+if kill -0 "$idle_pid" 2>/dev/null; then
+    fail "Idle client survived because of unrelated server activity"
+    kill "$idle_pid" 2>/dev/null || true
+    wait "$idle_pid" 2>/dev/null || true
+else
+    wait "$idle_pid" 2>/dev/null || true
+    pass "Other clients do not refresh idle client's timeout"
+fi
+
 
 print_title "${TEST_NUMBER}. Activity near timeout resets timer"
 TEST_NUMBER=$((TEST_NUMBER + 1))
@@ -1252,6 +1281,314 @@ if server_is_up; then
     pass "Server remains responsive after timeout tests"
 else
     fail "Server stopped responding after timeout tests"
+fi
+
+
+print_title "${TEST_NUMBER}. CGI GET"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+CGI_GET_BODY="${TMP_DIR}/cgi_get.txt"
+
+status="$(
+	curl -sS \
+		-o "${CGI_GET_BODY}" \
+		-w "%{http_code}" \
+		"${BASE_URL}/cgi/test.py" \
+		2>/dev/null
+)"
+
+if [ "$status" = "200" ]; then
+	pass "CGI GET returns 200"
+else
+	fail "CGI GET returns ${status} instead of 200"
+fi
+
+if grep -q '^Hello from CGI$' "${CGI_GET_BODY}"; then
+	pass "CGI GET output is returned to the client"
+else
+	fail "CGI GET output is incorrect"
+fi
+
+
+print_title "${TEST_NUMBER}. CGI query string"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+CGI_QUERY_OUTPUT="${TMP_DIR}/cgi_query.txt"
+
+status="$(
+	curl -sS \
+		-o "${CGI_QUERY_OUTPUT}" \
+		-w "%{http_code}" \
+		"${BASE_URL}/cgi/test_query.py?name=Bob&value=42" \
+		2>/dev/null
+)"
+
+if [ "$status" = "200" ]; then
+	pass "CGI query string request returns 200"
+else
+	fail "CGI query string request returns ${status} instead of 200"
+fi
+
+if grep -q '^QUERY_STRING=name=Bob&value=42$' "${CGI_QUERY_OUTPUT}"; then
+	pass "CGI receives the complete query string"
+else
+	fail "CGI query string is missing or incorrect"
+fi
+
+
+print_title "${TEST_NUMBER}. CGI POST"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+CGI_POST_BODY="${TMP_DIR}/cgi_post.txt"
+
+status="$(
+	curl -sS \
+		-o "${CGI_POST_BODY}" \
+		-w "%{http_code}" \
+		-X POST \
+		-H "Content-Type: text/plain" \
+		--data-binary "Hello CGI POST" \
+		"${BASE_URL}/cgi/test_post.py" \
+		2>/dev/null
+)"
+
+if [ "$status" = "200" ]; then
+	pass "CGI POST returns 200"
+else
+	fail "CGI POST returns ${status} instead of 200"
+fi
+
+if grep -q '^Received: Hello CGI POST$' "${CGI_POST_BODY}"; then
+	pass "CGI receives and returns POST body"
+else
+	fail "CGI POST body is incorrect"
+fi
+
+
+print_title "${TEST_NUMBER}. CGI binary POST"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+CGI_BINARY_INPUT="${TMP_DIR}/cgi_binary_input.bin"
+CGI_BINARY_OUTPUT="${TMP_DIR}/cgi_binary_output.bin"
+
+printf 'abc\0def' > "${CGI_BINARY_INPUT}"
+
+status="$(
+	curl -sS \
+		-o "${CGI_BINARY_OUTPUT}" \
+		-w "%{http_code}" \
+		-X POST \
+		-H "Content-Type: application/octet-stream" \
+		--data-binary "@${CGI_BINARY_INPUT}" \
+		"${BASE_URL}/cgi/test_binary.py" \
+		2>/dev/null
+)"
+
+if [ "$status" = "200" ]; then
+	pass "Binary CGI POST returns 200"
+else
+	fail "Binary CGI POST returns ${status} instead of 200"
+fi
+
+if cmp -s "${CGI_BINARY_INPUT}" "${CGI_BINARY_OUTPUT}"; then
+	pass "Binary CGI body is preserved byte-for-byte"
+else
+	fail "Binary CGI body differs from original"
+fi
+
+
+print_title "${TEST_NUMBER}. Large CGI POST"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+CGI_LARGE_INPUT="${TMP_DIR}/cgi_large_input.bin"
+CGI_LARGE_OUTPUT="${TMP_DIR}/cgi_large_output.txt"
+
+dd if=/dev/zero bs=1024 count=256 2>/dev/null \
+	| tr '\0' 'A' > "${CGI_LARGE_INPUT}"
+
+status="$(
+	curl -sS \
+		-o "${CGI_LARGE_OUTPUT}" \
+		-w "%{http_code}" \
+		-X POST \
+		-H "Content-Type: application/octet-stream" \
+		--data-binary "@${CGI_LARGE_INPUT}" \
+		"${BASE_URL}/cgi/test_post_large.py" \
+		2>/dev/null
+)"
+
+if [ "$status" = "200" ]; then
+	pass "Large CGI POST returns 200"
+else
+	fail "Large CGI POST returns ${status} instead of 200"
+fi
+
+if grep -q '^Length: 262144$' "${CGI_LARGE_OUTPUT}" \
+	&& grep -q '^Integrity: OK$' "${CGI_LARGE_OUTPUT}"; then
+	pass "Large CGI POST is transmitted completely"
+else
+	fail "Large CGI POST failed integrity check"
+fi
+
+
+print_title "${TEST_NUMBER}. CGI redirect"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+CGI_REDIRECT_HEADERS="${TMP_DIR}/cgi_redirect_headers.txt"
+
+curl -sS \
+	-D "${CGI_REDIRECT_HEADERS}" \
+	-o /dev/null \
+	"${BASE_URL}/cgi/test_redirect.py" \
+	2>/dev/null
+
+if grep -q '^HTTP/.* 302 ' "${CGI_REDIRECT_HEADERS}"; then
+	pass "CGI Status header produces HTTP 302"
+else
+	fail "CGI redirect does not return 302"
+fi
+
+if grep -qi '^Location: /images/private/Undead.png' \
+	"${CGI_REDIRECT_HEADERS}"; then
+	pass "CGI Location header is preserved"
+else
+	fail "CGI redirect Location header is missing"
+fi
+
+
+print_title "${TEST_NUMBER}. CGI non-zero exit status"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+status="$(http_status "${BASE_URL}/cgi/test_error.py")"
+
+if [ "$status" = "500" ]; then
+	pass "CGI exiting with non-zero status returns 500"
+else
+	fail "CGI exiting with non-zero status returns ${status} instead of 500"
+fi
+
+
+print_title "${TEST_NUMBER}. Invalid CGI output"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+status="$(http_status "${BASE_URL}/cgi/test_invalid_cgi.py")"
+
+if [ "$status" = "500" ]; then
+	pass "Invalid CGI output returns 500"
+else
+	fail "Invalid CGI output returns ${status} instead of 500"
+fi
+
+
+print_title "${TEST_NUMBER}. CGI execve failure"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+CGI_BAD_SCRIPT="www/cgi-bin/test.bad"
+
+touch "${CGI_BAD_SCRIPT}"
+
+status="$(http_status "${BASE_URL}/cgi/test.bad")"
+
+rm -f "${CGI_BAD_SCRIPT}"
+
+if [ "$status" = "500" ]; then
+	pass "Invalid CGI interpreter returns 500"
+else
+	fail "Invalid CGI interpreter returns ${status} instead of 500"
+fi
+
+
+print_title "${TEST_NUMBER}. CGI closes stdin early"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+CGI_CLOSED_STDIN_INPUT="${TMP_DIR}/cgi_closed_stdin.bin"
+CGI_CLOSED_STDIN_OUTPUT="${TMP_DIR}/cgi_closed_stdin.txt"
+
+dd if=/dev/zero \
+	of="${CGI_CLOSED_STDIN_INPUT}" \
+	bs=1024 \
+	count=1024 \
+	2>/dev/null
+
+status="$(
+	curl -sS \
+		-o "${CGI_CLOSED_STDIN_OUTPUT}" \
+		-w "%{http_code}" \
+		-X POST \
+		-H "Content-Type: application/octet-stream" \
+		--data-binary "@${CGI_CLOSED_STDIN_INPUT}" \
+		"${BASE_URL}/cgi/test_close_stdin.py" \
+		2>/dev/null
+)"
+
+if [ "$status" = "200" ] \
+	&& grep -q '^CGI survived$' "${CGI_CLOSED_STDIN_OUTPUT}"; then
+	pass "CGI closing stdin early is handled safely"
+else
+	fail "CGI closing stdin early produced an unexpected response"
+fi
+
+if server_is_up; then
+	pass "Server remains alive after CGI closes stdin"
+else
+	fail "Server stopped after CGI closed stdin"
+fi
+
+
+print_title "${TEST_NUMBER}. Slow CGI below timeout"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+CGI_SLOW_OUTPUT="${TMP_DIR}/cgi_slow.txt"
+
+status="$(
+	curl -sS \
+		--max-time 4 \
+		-o "${CGI_SLOW_OUTPUT}" \
+		-w "%{http_code}" \
+		"${BASE_URL}/cgi/test_slow_cgi.py" \
+		2>/dev/null
+)"
+
+if [ "$status" = "200" ] \
+	&& grep -q '^Still valid$' "${CGI_SLOW_OUTPUT}"; then
+	pass "CGI completing before timeout returns 200"
+else
+	fail "CGI below timeout produced an unexpected response"
+fi
+
+
+print_title "${TEST_NUMBER}. CGI execution timeout"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+status="$(
+	curl -sS \
+		--max-time 8 \
+		-o /dev/null \
+		-w "%{http_code}" \
+		"${BASE_URL}/cgi/test_timeout.py" \
+		2>/dev/null
+)"
+
+if [ "$status" = "500" ]; then
+	pass "CGI exceeding execution timeout returns 500"
+else
+	fail "CGI timeout returns ${status} instead of 500"
+fi
+
+if server_is_up; then
+	pass "Server remains responsive after CGI timeout"
+else
+	fail "Server stopped responding after CGI timeout"
+fi
+
+
+print_title "${TEST_NUMBER}. Server alive after CGI tests"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+if [ "$(http_status "${BASE_URL}/index.html")" = "200" ]; then
+	pass "Server remains fully functional after CGI tests"
+else
+	fail "Server no longer serves normal requests after CGI tests"
 fi
 
 print_title "Summary"

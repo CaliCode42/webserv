@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 23:52:39 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/13 17:42:59 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/24 11:24:42 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -51,6 +51,7 @@ std::string HttpResponse::reasonPhrase(int code)
 		case 201: return "Created";
 		case 204: return "No Content";
 		case 301: return "Moved Permanently";
+		case 302: return "Found";
 		case 400: return "Bad Request";
 		case 403: return "Forbidden";
 		case 404: return "Not Found";

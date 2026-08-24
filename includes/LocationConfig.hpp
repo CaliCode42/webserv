@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/14 10:11:50 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/17 12:21:04 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/24 19:29:33 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,8 +33,8 @@ private:
 	stringMap			_cgiHandlers;
 
 public:
-	LocationConfig();
-	~LocationConfig();
+	LocationConfig() : _autoIndex(false) {};
+	~LocationConfig() {};
 
 	const string& 				getPath()const;
 	const string& 				getRoot()const;
@@ -42,8 +42,8 @@ public:
 	const stringVector&			getAllowedMethods()const;
 	bool						getAutoIndex()const;
 
-    const stringMap&			getCgiHandlers()const;
-    string						getCgiPath(const string& extension)const;
+	const stringMap&			getCgiHandlers()const;
+	string						getCgiPath(const string& extension)const;
 
 	void						setPath(const string& path);
 	void						setRoot(const string& root);
@@ -51,12 +51,12 @@ public:
 	void						setAllowedMethods(const stringVector& methods);
 	void						setAutoIndex(bool value);
 
-    void						setCgiHandlers(const stringMap& extensions);
+	void						setCgiHandlers(const stringMap& extensions);
 
 	void						addCgiHandler(const string& extension, const string& executable);
 
-	bool						isMethodAllowed(const string& method)const;
 	bool						isCgiEnabled()const;
+	bool						isMethodAllowed(const string& method)const;
 	bool						isCgiExtension(const string& extension)const;
 };
 

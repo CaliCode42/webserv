@@ -6,15 +6,11 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/17 10:31:09 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/17 12:20:57 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/24 19:28:51 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "LocationConfig.hpp"
-
-LocationConfig::LocationConfig(): _autoIndex(false) {}
-
-LocationConfig::~LocationConfig() {}
 
 const string&	LocationConfig::getPath()const
 {
@@ -111,5 +107,5 @@ bool	LocationConfig::isMethodAllowed(const string& method)const
 
 bool	LocationConfig::isCgiExtension(const string& extension)const
 {
-    return (_cgiHandlers.find(extension) != _cgiHandlers.end());
+	return (_cgiHandlers.find(extension) != _cgiHandlers.end());
 }

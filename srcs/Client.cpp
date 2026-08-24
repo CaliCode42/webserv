@@ -6,17 +6,11 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:40:20 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/14 12:25:08 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/24 19:29:00 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Client.hpp"
-
-Client::Client() : _fd(-1), _lastActivity(std::time(NULL)) {}
-
-Client::Client(int fd) : _fd(fd), _lastActivity(std::time(NULL)) {}
-
-Client::~Client() {}
 
 int	Client::getFd() const
 {
@@ -31,6 +25,11 @@ const std::string&	Client::getWriteBuffer() const
 HttpRequest&	Client::getRequest()
 {
 	return (_request);
+}
+
+std::time_t	Client::getLastActivity() const
+{
+	return (_lastActivity);
 }
 
 void	Client::appendToWriteBuffer(const std::string &data)
@@ -54,9 +53,4 @@ void	Client::removeSentBytes(std::size_t count)
 void	Client::updateActivity()
 {
 	_lastActivity = std::time(NULL);
-}
-
-std::time_t	Client::getLastActivity() const
-{
-	return (_lastActivity);
 }
