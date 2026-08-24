@@ -6,7 +6,7 @@
 #    By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/06/22 14:54:39 by tcali             #+#    #+#              #
-#    Updated: 2026/08/15 15:20:23 by sdossa           ###   ########.fr        #
+#    Updated: 2026/08/22 17:19:21 by sdossa           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -25,6 +25,8 @@ SRC=\
 	$(SRC_DIR)/Server.cpp\
 	$(SRC_DIR)/Client.cpp\
 	$(SRC_DIR)/ServerConfig.cpp\
+	$(SRC_DIR)/LocationConfig.cpp\
+	$(SRC_DIR)/ConfigParser.cpp\
 	$(HTTP_DIR)/HttpRequest.cpp\
 	$(HTTP_DIR)/HttpResponse.cpp\
 	$(HTTP_DIR)/MethodHandler.cpp\

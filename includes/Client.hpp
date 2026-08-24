@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
+/*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:16:17 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/11 16:41:11 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/22 16:20:00 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,7 +26,7 @@ private:
 	std::string	_readBuffer;
 	std::string	_writeBuffer;
 	HttpRequest _request;
-	bool		_isComplete;
+	//bool		_isComplete;
 
 public:
 
@@ -36,6 +36,7 @@ public:
 	// Client& operator=(const Client& other);
 	~Client();
 
+	bool		_isComplete;
 	int					getFd() const;
 
 	const std::string&	getReadBuffer()const;

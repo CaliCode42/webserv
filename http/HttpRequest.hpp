@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 22:09:53 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/15 11:52:10 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/23 17:07:33 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,6 +32,7 @@ public:
 	};
 	
 	HttpRequest();
+	~HttpRequest();
 	
 	void appendData(const char* data, size_t len);
 

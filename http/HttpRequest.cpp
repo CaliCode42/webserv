@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 22:09:59 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/15 20:49:55 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/24 09:07:40 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,8 +18,10 @@
 #include <sstream>
 
 HttpRequest::HttpRequest()
-	: _state(STATE_REQUEST_LINE), _errorCode(0), _contentLength(0), _chunkSize(0)
-		
+	: _state(STATE_REQUEST_LINE), _errorCode(0), _contentLength(0), _chunkSize(0)	
+{}
+
+HttpRequest::~HttpRequest()
 {}
 
 
@@ -133,6 +135,7 @@ void HttpRequest::onHeadersComplete()
 	std::string transferEncoding = getHeader("Transfer-Encoding");
 	if (toLower(transferEncoding) == "chunked")
 	{
+		_headers.erase("content-length"); //delete fantom C-L
 		_state = STATE_CHUNK_SIZE;
 		return;
 	}

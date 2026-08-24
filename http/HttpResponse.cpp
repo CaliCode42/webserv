@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 23:52:39 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/15 11:57:11 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/24 09:07:33 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,11 @@
 #include <sstream>
 
 
-HttpResponse::HttpResponse() : _status(200) {}
+HttpResponse::HttpResponse() : _status(200)
+{}
+
+HttpResponse::~HttpResponse()
+{}
 
 void HttpResponse::setStatus(int code) { _status = code; } 
 

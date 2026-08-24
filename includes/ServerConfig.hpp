@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ServerConfig.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
+/*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/20 15:35:09 by tcali             #+#    #+#             */
-/*   Updated: 2026/07/20 15:48:59 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/16 14:03:45 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,19 +15,37 @@
 
 #include <iostream>
 #include <string>
+#include <map>
+#include <vector>
+#include "LocationConfig.hpp"
 
 class ServerConfig
 {
 private:
-	std::string	_root;
+	std::string _root;
+	unsigned int _port;
+	std::map<int, std::string> _errorPages;
+	std::size_t _clientMaxBodySize;
+	std::vector<LocationConfig> _locations;
 
 public:
 	ServerConfig();
-	// ServerConfig(const ServerConfig& other);
-	// ServerConfig& operator=(const ServerConfig& other);
 	~ServerConfig();
 
-	std::string	getRoot() const;
+	std::string getRoot() const;
+	void setRoot(const std::string& root);
+
+	unsigned int getPort() const;
+	void setPort(unsigned int port);
+
+	const std::map<int, std::string>& getErrorPages() const;
+	void setErrorPage(int code, const std::string& path);
+
+	std::size_t getClientMaxBodySize() const;
+	void setClientMaxBodySize(std::size_t size);
+
+	const std::vector<LocationConfig>& getLocations() const;
+	void addLocation(const LocationConfig& loc);
 };
 
 #endif

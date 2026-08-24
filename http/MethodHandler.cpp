@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/25 19:50:52 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/15 20:41:18 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/24 09:31:36 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,7 +23,11 @@
 #include <cstdio>
 #include <cerrno>
 
-MethodHandler::MethodHandler(const ServerConfig& config) : _config(config) {}
+MethodHandler::MethodHandler(const ServerConfig& config) : _config(config)
+{}
+
+MethodHandler::~MethodHandler()
+{}
 
 HttpResponse MethodHandler::makeError(int code)
 {
@@ -38,7 +42,10 @@ HttpResponse MethodHandler::handle(const HttpRequest& req)
 	if (req.hasError())
 		return makeError(req.errorCode());
 
-	if (req.getUri().find("..") != std::string::npos)
+	//decode before the 1st test anti path-traversal or "%2e%2e" pass through
+	std::string decodedUri = decodeUrl(req.getUri());
+
+	if (decodedUri.find("..") != std::string::npos)
 		return makeError(403);
 
 	if (req.getMethod() == "GET")
@@ -54,7 +61,7 @@ HttpResponse MethodHandler::handle(const HttpRequest& req)
 	}
 	if (req.getMethod() == "POST")
 	{
-		return handlePost(req);
+		return handlePost(req, decodedUri);
 	}
 	if (req.getMethod() == "DELETE")
 	{
@@ -66,6 +73,28 @@ HttpResponse MethodHandler::handle(const HttpRequest& req)
 		return handleDelete(path);
 	}
 	return makeError(501);
+}
+
+std::string MethodHandler::decodeUrl(const std::string& uri)
+{
+	std::string result;
+	result.reserve(uri.size());
+
+	for (std::string::size_type i = 0; i < uri.size(); ++i)
+	{
+		if (uri[i] == '%' && i + 2 < uri.size()
+			&& std::isxdigit(static_cast<unsigned char>(uri[i + 1]))
+			&& std::isxdigit(static_cast<unsigned char>(uri[i + 2])))
+		{
+			std::string hex = uri.substr(i + 1, 2);
+			int value = std::strtol(hex.c_str(), NULL, 16);
+			result += static_cast<char>(value);
+			i += 2;
+		}
+		else
+			result += uri[i];
+	}
+	return result;
 }
 
 HttpResponse MethodHandler::handleGet(const std::string& path)
@@ -89,7 +118,7 @@ HttpResponse MethodHandler::handleGet(const std::string& path)
 	
 }
 
-HttpResponse MethodHandler::handlePost(const HttpRequest& req)
+HttpResponse MethodHandler::handlePost(const HttpRequest& req, const std::string& decodedUri)
 {
 	//path to save the file
 	std::string uploadDir = _config.getRoot() + "/uploads/";
@@ -102,15 +131,17 @@ HttpResponse MethodHandler::handlePost(const HttpRequest& req)
 	}	
 
 	
-	std::string::size_type slashPos = req.getUri().find_last_of('/');
+	std::string::size_type slashPos = decodedUri.find_last_of('/');
 	std::string filename;
 	if (slashPos != std::string::npos)
-		filename = req.getUri().substr(slashPos + 1);
+		filename = decodedUri.substr(slashPos + 1);
 	
 	if (filename.empty())
 	{
+		//avoid silent ecrasing if 2 Posts w/t file names arrive at the same time
+		static unsigned long uploadCounter = 0;
 		std::ostringstream oss;
-		oss << "upload_" << std::time(NULL) << ".bin";
+		oss << "upload_" << std::time(NULL) << "_" << uploadCounter++ << ".bin";
 		filename = oss.str();
 	}
 	uploadDir += filename;
