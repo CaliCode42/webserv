@@ -1,23 +1,16 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   LocationConfig.cpp                                 :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/08/16 15:29:03 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/22 16:27:33 by sdossa           ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #include "LocationConfig.hpp"
 
-LocationConfig::LocationConfig() : _path(""), _root("www"), _index("index.html"), _autoindex(false),
-		_redirect(""), _uploadEnabled(false), _uploadPath("") {}
+LocationConfig::LocationConfig()
+	: _path(""), _root("www"), _index("index.html"), _autoindex(false),
+	  _redirect(""), _uploadEnabled(false), _uploadPath("")
+{
+}
 
-LocationConfig::~LocationConfig() {}
+LocationConfig::~LocationConfig()
+{
+}
 
-std::string LocationConfig::getPath() const 
+std::string LocationConfig::getPath() const
 {
 	return (_path);
 }
@@ -27,7 +20,7 @@ void LocationConfig::setPath(const std::string& path)
 	_path = path;
 }
 
-std::string LocationConfig::getRoot() const 
+std::string LocationConfig::getRoot() const
 {
 	return (_root);
 }
@@ -37,7 +30,7 @@ void LocationConfig::setRoot(const std::string& root)
 	_root = root;
 }
 
-std::string LocationConfig::getIndex() const 
+std::string LocationConfig::getIndex() const
 {
 	return (_index);
 }
@@ -135,4 +128,8 @@ std::string LocationConfig::getCgiInterpreter(const std::string& ext) const
 		return "";
 	return cgiIt->second;
 }
-	
+
+std::string LocationConfig::getCgiPath(const std::string& extension) const
+{
+	return getCgiInterpreter(extension);
+}

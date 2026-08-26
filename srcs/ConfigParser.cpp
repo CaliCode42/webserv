@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/23 15:14:34 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/24 11:55:47 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/26 23:26:55 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -125,11 +125,13 @@ std::size_t ConfigParser::parseSize(const std::string& value)
 	return static_cast<std::size_t>(number) * multiplier;
 }
 
-LocationConfig ConfigParser::parseLocation()
+LocationConfig ConfigParser::parseLocation(const std::string& serverRoot)
 {
 	LocationConfig loc;
 	
 	loc.setPath(next());
+	//inherit root from default server, erase further down if 'root' explicit in location bloc
+	loc.setRoot(serverRoot); 
 	expect("{");
 
 	while (peek() != "}")
@@ -138,7 +140,7 @@ LocationConfig ConfigParser::parseLocation()
 		
 		if (directive == "root")
 		{
-			loc.setPath(next());
+			loc.setRoot(next());
 			expect(";");
 		}
 		else if (directive == "index")
@@ -192,12 +194,20 @@ LocationConfig ConfigParser::parseLocation()
 ServerConfig ConfigParser::parseServer()
 {
 	ServerConfig server;
+	std::set<std::string> seenDirectives;
 
 	expect("{");
 
 	while (peek() != "}")
 	{
 		std::string directive = next();
+
+		if (directive == "listen" || directive == "root" || directive == "client_max_body_size")
+		{
+			if (seenDirectives.find(directive) != seenDirectives.end())
+				throw std::runtime_error("ConfigParser: duplicate directive '" + directive + "' in server block");
+			seenDirectives.insert(directive);
+		}
 		
 		if (directive == "listen")
 		{
@@ -206,6 +216,8 @@ ServerConfig ConfigParser::parseServer()
 			std::string extra;
 			if (!(iss >> port) || (iss >> extra))
 				throw std::runtime_error("ConfigParser: invalid port");
+			if (port < 1 || port > 65535)
+				throw std::runtime_error("ConfigParser: port out of range (1-65535)");
 			server.setPort(port);
 			expect(";");
 		}
@@ -221,9 +233,9 @@ ServerConfig ConfigParser::parseServer()
 		}
 		else if (directive == "error_page")
 		{
-			std::istringstream iss(next());
 			int code;
 			std::string extra;
+			std::istringstream iss(next());
 			if (!(iss >> code) || (iss >> extra))
 				throw std::runtime_error("ConfigParser: invalid error code");
 			std::string errorPath = next();
@@ -232,7 +244,7 @@ ServerConfig ConfigParser::parseServer()
 		}
 		else if (directive == "location")
 		{
-			server.addLocation(parseLocation());
+			server.addLocation(parseLocation(server.getRoot()));
 		}
 		else
 			throw std::runtime_error("ConfigParser: unknown directive in server: " + directive);

@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   LocationConfig.hpp                                 :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/08/16 15:29:36 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/21 21:34:40 by sdossa           ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #ifndef LOCATIONCONFIG_HPP
 #define LOCATIONCONFIG_HPP
 
@@ -30,17 +18,17 @@ private:
 	bool _uploadEnabled;
 	std::string _uploadPath;
 	std::map<std::string, std::string> _cgiExtensions; // extension -> path interpreter (ex: ".php" -> "/usr/bin/php-cgi")
-	
+
 public:
 	LocationConfig();
 	~LocationConfig();
 
 	std::string getPath() const;
 	void setPath(const std::string& path);
-	
+
 	std::string getRoot() const;
 	void setRoot(const std::string& root);
-	
+
 	std::string getIndex() const;
 	void setIndex(const std::string& index);
 
@@ -57,15 +45,17 @@ public:
 
 	bool getUploadEnabled() const;
 	void setUploadEnabled(bool value);
-	
+
 	std::string getUploadPath() const;
 	void setUploadPath(const std::string& path);
-	
+
 	const std::map<std::string, std::string>& getCgiExtensions() const;
 	void addCgiExtension(const std::string& ext, const std::string& interpreterPath);
 	bool isCgiExtension(const std::string& ext) const;
 	std::string getCgiInterpreter(const std::string& ext) const;
 
+	// alias attendu par CgiHandler.cpp (Tommy) - meme logique que getCgiInterpreter
+	std::string getCgiPath(const std::string& extension) const;
 };
 
 #endif

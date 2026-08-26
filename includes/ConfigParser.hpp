@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/23 15:14:58 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/24 09:47:08 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/26 23:21:22 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <set>
 #include <cctype>
 #include <stdexcept>
 #include "ServerConfig.hpp"
@@ -39,7 +40,7 @@ private:
 	std::size_t parseSize(const std::string& value);
 
 	ServerConfig parseServer();
-	LocationConfig parseLocation();
+	LocationConfig parseLocation(const std::string& serverRoot);
 
 public:
 	ConfigParser();

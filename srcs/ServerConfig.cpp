@@ -1,28 +1,16 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   ServerConfig.cpp                                   :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/07/20 15:40:51 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/16 15:10:18 by sdossa           ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #include "ServerConfig.hpp"
 
 ServerConfig::ServerConfig(): _root("www"), _port(8080), _clientMaxBodySize(1 * 1024 * 1024)
 {
-	std::cout << "[ServerConfig] Default constructor called" << std::endl;
+	//std::cout << "[ServerConfig] Default constructor called" << std::endl;
 }
 
 ServerConfig::~ServerConfig()
 {
-	std::cout << "[ServerConfig] Destructor called" << std::endl;
+	//std::cout << "[ServerConfig] Destructor called" << std::endl;
 }
 
-std::string	ServerConfig::getRoot()const
+std::string ServerConfig::getRoot()const
 {
 	return (_root);
 }
@@ -72,20 +60,32 @@ void ServerConfig::addLocation(const LocationConfig& loc)
 	_locations.push_back(loc);
 }
 
+const LocationConfig* ServerConfig::findLocation(const std::string& uri) const
+{
+	const LocationConfig* best = NULL;
+	std::size_t bestLen = 0;
 
-// ServerConfig::ServerConfig(const ServerConfig& other)
-// {
-// 	std::cout << "[ServerConfig] Copy constructor called" << std::endl;
-// 	*this = other;
-// }
+	for (std::vector<LocationConfig>::const_iterator it = _locations.begin();
+		it != _locations.end(); ++it)
+	{
+		const std::string& path = it->getPath();
 
-// ServerConfig& ServerConfig::operator=(const ServerConfig& other)
-// {
-// 	if (this != &other)
-// 	{
-// 		// copy attributes here
-// 	}
-// 	std::cout << "[ServerConfig] Copy assignment operator called" << std::endl;
-// 	return (*this);
-// }
+		// la location doit etre un prefixe de l'uri demandee
+		if (uri.compare(0, path.size(), path) != 0)
+			continue;
 
+		bool boundaryOk = (uri.size() == path.size())
+			|| (path[path.size() - 1] == '/')
+			|| (uri[path.size()] == '/');
+		
+		if (!boundaryOk)
+			continue;
+		
+		if (path.size() > bestLen)
+		{
+			bestLen = path.size();
+			best = &(*it);
+		}
+	}
+	return (best);
+}
