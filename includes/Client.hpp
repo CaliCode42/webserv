@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
+/*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:16:17 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/22 16:20:00 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/24 19:29:25 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,47 +15,34 @@
 
 #include <iostream>
 #include <string>
+#include <ctime>
 #include "HttpRequest.hpp"
-
-enum	Buffer {READ, WRITE};
 
 class	Client
 {
 private:
-	int			_fd;
-	std::string	_readBuffer;
-	std::string	_writeBuffer;
-	HttpRequest _request;
-	//bool		_isComplete;
+	int							_fd;
+	std::string					_writeBuffer;
+	HttpRequest 				_request;
+	std::time_t					_lastActivity;
 
 public:
 
-	Client();
-	Client(int fd);
-	// Client(const Client& other);
-	// Client& operator=(const Client& other);
-	~Client();
+	Client() : _fd(-1), _lastActivity(std::time(NULL)) {};
+	Client(int fd) : _fd(fd), _lastActivity(std::time(NULL)) {}
+	~Client() {};
 
-	bool		_isComplete;
 	int					getFd() const;
-
-	const std::string&	getReadBuffer()const;
-
 	const std::string&	getWriteBuffer()const;
-
 	HttpRequest&		getRequest();
-	
-	void				appendToReadBuffer(const std::string &data);
+	std::time_t 		getLastActivity() const;
 	
 	void				appendToWriteBuffer(const std::string &data);
 	
 	bool 				hasPendingWriteData() const;
-    void				removeSentBytes(std::size_t count);
+	void				removeSentBytes(std::size_t count);
 
-	void				setRequest(const HttpRequest &request);
-
-	bool				hasCompleteRequest() const;
-	std::string			extractRequest();
+	void        		updateActivity();
 };
 
 #endif

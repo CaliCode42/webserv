@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/23 10:52:18 by tcali             #+#    #+#             */
-/*   Updated: 2026/07/20 13:54:51 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/18 19:01:48 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,5 +23,7 @@ std::string turnIntoString(T value)
     ss << value;
     return (ss.str());
 }
+
+bool	setNonBlocking(int fd);
 
 #endif
