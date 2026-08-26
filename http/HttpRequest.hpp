@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 22:09:53 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/15 11:52:10 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/24 13:52:46 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,6 +32,7 @@ public:
 	};
 	
 	HttpRequest();
+	~HttpRequest();
 	
 	void appendData(const char* data, size_t len);
 
@@ -51,6 +52,7 @@ public:
 	
 	std::map<std::string, std::string> getCookies() const;
 	
+	void setMaxBodySize(std::size_t size) {_maxBodySize = size; }
 
 	
 private:
@@ -67,6 +69,7 @@ private:
 	size_t _contentLength; // parsed when header are done;
 	size_t _chunkSize; //
 	//size_t _cookies;
+	std::size_t _maxBodySize;
 	
 	void setError(int code);
 	void onHeadersComplete(); // choice = no body? sized body? chunked?

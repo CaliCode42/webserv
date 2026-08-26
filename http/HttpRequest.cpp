@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 22:09:59 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/15 20:49:55 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/24 14:37:52 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,8 +18,10 @@
 #include <sstream>
 
 HttpRequest::HttpRequest()
-	: _state(STATE_REQUEST_LINE), _errorCode(0), _contentLength(0), _chunkSize(0)
-		
+	: _state(STATE_REQUEST_LINE), _errorCode(0), _contentLength(0), _chunkSize(0), _maxBodySize(static_cast<std::size_t>(-1))	
+{}
+
+HttpRequest::~HttpRequest()
 {}
 
 
@@ -133,25 +135,31 @@ void HttpRequest::onHeadersComplete()
 	std::string transferEncoding = getHeader("Transfer-Encoding");
 	if (toLower(transferEncoding) == "chunked")
 	{
+		_headers.erase("content-length"); //delete fantom C-L
 		_state = STATE_CHUNK_SIZE;
 		return;
 	}
 
 	//Content-Length
 	std::string contentLengthStr = getHeader("Content-Length");
-		if (contentLengthStr.empty())
-		{
-			_state = STATE_COMPLETE;
-			return;
-		}
-		std::istringstream iss(contentLengthStr);
-		std::string extra;
-		if (!(iss >> _contentLength) || (iss >> extra))
-		{
-			setError(400);
-			return;
-		}
-		_state = STATE_BODY;	
+	if (contentLengthStr.empty())
+	{
+		_state = STATE_COMPLETE;
+		return;
+	}
+	std::istringstream iss(contentLengthStr);
+	std::string extra;
+	if (!(iss >> _contentLength) || (iss >> extra))
+	{
+		setError(400);
+		return;
+	}
+	if (_contentLength > _maxBodySize) //max bodysize
+	{
+		setError(413);
+		return;
+	}
+	_state = STATE_BODY;	
 }
 
 // Sized body: wait til _contentLength bytes are buffered
@@ -207,8 +215,7 @@ bool HttpRequest::parseChunkSize()
 		return false;
 	}
 
-	static const std::size_t MAX_CHUNK_SIZE = 10 * 1024 * 1024;
-	if (_chunkSize > MAX_CHUNK_SIZE)
+	if (_chunkSize > _maxBodySize)
 	{
 		setError(413);
 		return false;
@@ -231,6 +238,11 @@ bool HttpRequest::parseChunkData()
 	}
 	_body.append(_buffer, 0, _chunkSize);
 	_buffer.erase(0, _chunkSize + 2);
+	if (_body.size() > _maxBodySize)
+	{
+		setError(413);
+		return false;
+	}
 	_state = STATE_CHUNK_SIZE;
 	return true;
 }
