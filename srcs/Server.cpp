@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:33:43 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/27 17:07:00 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/27 23:37:22 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,74 +39,132 @@ HttpResponse	Server::buildErrorResponse(int statusCode)
 	return (response);
 }
 
-Server::Server(int port, const ServerConfig& config): _port(port), _serverSocket(-1),
-	_config(config), _handler(_config)
+Server::Server(const std::vector<ServerConfig>& configs): _configs(configs)
 {
+	for (std::size_t i = 0; i < _configs.size(); ++i)
+	{
+		_handlers[&_configs[i]] = new MethodHandler(_configs[i]);
+	}
+
 	std::cout << "[Server] constructor called: server created" << std::endl;
 }
 
 Server::~Server()
 {
 	std::cout << "[Server] Destructor called" << std::endl;
+
+	for (std::map<const ServerConfig*, MethodHandler*>::iterator it =
+			_handlers.begin(); it != _handlers.end(); ++it)
+		delete it->second;
+
 	for (std::vector<pollfd>::iterator it = _fds.begin();
 		it != _fds.end(); ++it)
-	{
 		close(it->fd);
-	}
 }
 
-void	Server::initSocket()
+int	Server::createListeningSocket(unsigned int port)
 {
-	_serverSocket = socket(AF_INET, SOCK_STREAM, 0);
-	if (_serverSocket == -1)
+	int	serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+	if (serverSocket == -1)
 		throw std::runtime_error("failed to init socket.");
 
 	sockaddr_in	addr;
 	
 	std::memset(&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET;
-	addr.sin_port = htons(_port);
+	addr.sin_port = htons(port);
 	addr.sin_addr.s_addr = INADDR_ANY;
 
 	int opt = 1;
 
-	if (setsockopt(_serverSocket, SOL_SOCKET, SO_REUSEADDR,
+	if (setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR,
 		&opt, sizeof(opt)) == -1)
 	{
-		close(_serverSocket);
-		_serverSocket = -1;
+		close(serverSocket);
 		throw std::runtime_error("failed to set SO_REUSEADDR");
 	}
 
-	if (bind(_serverSocket, reinterpret_cast<sockaddr*>(&addr),
+	if (bind(serverSocket, reinterpret_cast<sockaddr*>(&addr),
 		sizeof(addr)) == -1)
 	{
-		close(_serverSocket);
-		_serverSocket = -1;
+		close(serverSocket);
 		throw std::runtime_error("failed to bind socket.");
 	}
 
-	if (listen(_serverSocket, 10) == -1)
+	if (listen(serverSocket, 10) == -1)
 	{
-		close(_serverSocket);
-		_serverSocket = -1;
+		close(serverSocket);
 		throw std::runtime_error("socket failed to listen.");
 	}
 
-	if (!setNonBlocking(_serverSocket))
+	if (!setNonBlocking(serverSocket))
 	{
-		close(_serverSocket);
-		_serverSocket = -1;
+		close(serverSocket);
 		throw std::runtime_error("failed to set server socket as non-blocking");
 	}
 	
-	pollfd	pfd;
+	return (serverSocket);
+}
 
-	pfd.fd = _serverSocket;
-	pfd.events = POLLIN;
-	pfd.revents = 0;
+void	Server::initSockets()
+{	
+	for (std::size_t i = 0; i < _configs.size(); ++i)
+	{
+		int	fd = createListeningSocket(_configs[i].getPort());
 
-	_fds.push_back(pfd);
+		ListeningSocket	listener;
+
+		listener.fd = fd;
+		listener.config = &_configs[i];
+
+		_listeningSockets.push_back(listener);
+
+		pollfd	pfd;
+
+		pfd.fd = fd;
+		pfd.events = POLLIN;
+		pfd.revents = 0;
+
+		_fds.push_back(pfd);
+	}
+}
+
+const ListeningSocket	*Server::findListeningSocket(int fd) const
+{
+	for (std::size_t i = 0; i < _listeningSockets.size(); ++i)
+	{
+		if (_listeningSockets[i].fd == fd)
+			return (&_listeningSockets[i]);
+	}
+
+	return (NULL);
+}
+
+const ServerConfig	*Server::getClientConfig(int clientFd) const
+{
+	std::map<int, const ServerConfig*>::const_iterator	it =
+		_clientConfigs.find(clientFd);
+
+	if (it == _clientConfigs.end())
+		return (NULL);
+
+	return (it->second);
+}
+
+MethodHandler	*Server::getClientHandler(int clientFd)
+{
+	const ServerConfig	*config = getClientConfig(clientFd);
+
+	if (config == NULL)
+		return (NULL);
+
+	std::map<const ServerConfig*, MethodHandler*>::iterator	it =
+		_handlers.find(config);
+
+	if (it == _handlers.end())
+		return (NULL);
+
+	return (it->second);
 }
 
 void	Server::run()
@@ -134,13 +192,15 @@ void	Server::run()
 			if (revents == 0)
 				continue ;
 
-			if (fd == _serverSocket)
+			const ListeningSocket	*listener = findListeningSocket(fd);
+
+			if (listener != NULL)
 			{
 				if (revents & (POLLERR | POLLHUP | POLLNVAL))
 					throw std::runtime_error("server socket poll error");
 
 				if (revents & POLLIN)
-					acceptClient();
+					acceptClient(*listener);
 
 				continue ;
 			}
@@ -186,11 +246,11 @@ void	Server::run()
 	}
 }
 
-void	Server::acceptClient()
+void	Server::acceptClient(const ListeningSocket& listener)
 {
 	while (true)
 	{
-		int clientFd = accept(_serverSocket, NULL, NULL);
+		int clientFd = accept(listener.fd, NULL, NULL);
 
 		if (clientFd < 0)
 			return ;
@@ -209,11 +269,18 @@ void	Server::acceptClient()
 
 		_fds.push_back(client);
 		_clients.insert(std::make_pair(clientFd, Client(clientFd)));
+		_clientConfigs[clientFd] = listener.config;
 		
 		//set max body
-		_clients.find(clientFd)->second.getRequest().setMaxBodySize(_config.getClientMaxBodySize());
+		std::map<int, Client>::iterator	clientIt = _clients.find(clientFd);
+
+		if (clientIt != _clients.end())
+		{
+			std::size_t	maxBodySize = listener.config->getClientMaxBodySize();
+			clientIt->second.getRequest().setMaxBodySize(maxBodySize);
+		}
 	
-		std::cout << "Client connected: " << clientFd << std::endl;
+		// std::cout << "Client connected: " << clientFd << std::endl;
 	}
 }
 
@@ -250,9 +317,17 @@ void	Server::handleClientRead(Client& client)
 		return ;
 
 	try {
-		const LocationConfig	*location = _config.findLocation(request.getUri());
+		const ServerConfig	*config = getClientConfig(client.getFd());
 
-		if (location != NULL && !location->isMethodAllowed(request.getMethod()))
+		if (config == NULL)
+		{
+			markClientForRemoval(client.getFd());
+			return ;
+		}
+
+		const LocationConfig	*location = config->findLocation(request.getUri());
+
+		if (location != NULL && !location->getAllowedMethods().empty() && !location->isMethodAllowed(request.getMethod()))
 		{
 			HttpResponse	response = buildErrorResponse(405);
 
@@ -285,7 +360,15 @@ void	Server::handleClientRead(Client& client)
 			return ;
 		}
 
-		HttpResponse	response = _handler.handle(request, *location);
+		MethodHandler	*handler = getClientHandler(client.getFd());
+
+		if (handler == NULL)
+		{
+			markClientForRemoval(client.getFd());
+			return ;
+		}
+
+		HttpResponse	response = handler->handle(request);
 
 		client.appendToWriteBuffer(response.serialize());
 		enableClientWrite(client.getFd());
@@ -398,12 +481,13 @@ void Server::removeMarkedClients()
 
 void	Server::removeClient(int fd)
 {
-	std::cout << "Client disconnected: " << fd << std::endl;
+	// std::cout << "Client disconnected: " << fd << std::endl;
 
 	removeCgiProcess(fd);
 
 	close(fd);
 	_clients.erase(fd);
+	_clientConfigs.erase(fd);
 
 	removePollFd(fd);
 }

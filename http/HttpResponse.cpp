@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 23:52:39 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/27 16:33:04 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/27 17:10:35 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,13 +26,10 @@ void HttpResponse::setBody(const std::string& body, const std::string& contentTy
 {
 	_body = body;
 	setHeader("Content-Type", contentType);
-	_body = body;
-	setHeader("Content-Type", contentType);
 }
 
 void HttpResponse::setHeader(const std::string& key, const std::string&  value)
 {
-	_headers.push_back(std::make_pair(key, value));
 	_headers.push_back(std::make_pair(key, value));
 }
 
@@ -40,22 +37,17 @@ void HttpResponse::setHeader(const std::string& key, const std::string&  value)
 std::string HttpResponse::serialize() const
 {
 	std::ostringstream out;
+
 	out << "HTTP/1.1 " << _status << " " << reasonPhrase(_status) << "\r\n";
 	out << "Content-Length: " << _body.size() << "\r\n";
 	out << "Server: webserv/1.0\r\n";
+
 	for (size_t i = 0; i < _headers.size(); ++i)
 		out << _headers[i].first << ": " << _headers[i].second << "\r\n";
+
 	out << "\r\n";
 	out << _body;
-	return out.str();
-	std::ostringstream out;
-	out << "HTTP/1.1 " << _status << " " << reasonPhrase(_status) << "\r\n";
-	out << "Content-Length: " << _body.size() << "\r\n";
-	out << "Server: webserv/1.0\r\n";
-	for (size_t i = 0; i < _headers.size(); ++i)
-		out << _headers[i].first << ": " << _headers[i].second << "\r\n";
-	out << "\r\n";
-	out << _body;
+	
 	return out.str();
 }
 

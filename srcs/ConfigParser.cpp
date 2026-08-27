@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/23 15:14:34 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/27 17:05:18 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/27 22:27:37 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -285,7 +285,7 @@ ServerConfig ConfigParser::parseServer()
 	return server;
 }
 
-std::vector<ServerConfig> ConfigParser::parse(const std::string& path)
+std::vector<ServerConfig>	ConfigParser::parse(const std::string& path)
 {
 	std::string content = readFile(path);
 	_tokens = tokenize(content);

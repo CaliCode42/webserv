@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/25 19:50:52 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/27 16:36:02 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/27 23:35:24 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -110,11 +110,6 @@ HttpResponse MethodHandler::handle(const HttpRequest& req)
 		response.setStatus(301);
 		response.setHeader("Location", location->getRedirect());
 		response.setBody("<h1>301 - Moved Permanently</h1>", "text/html");
-	}
-	else if (location != NULL && !location ->getAllowedMethods().empty()
-			&& !location->isMethodAllowed(req.getMethod()))
-	{
-		response = makeError(405);
 	}
 	else if (req.getMethod() == "GET")
 	{

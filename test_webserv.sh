@@ -148,6 +148,17 @@ fi
 
 create_test_files
 
+# print_title "${TEST_NUMBER}. GET with no root defined in location"
+# TEST_NUMBER=$((TEST_NUMBER + 1))
+
+# status="$(http_status "${BASE_URL}/foo/test.txt")"
+
+# if [ "$status" = "200" ]; then
+#     pass "GET /foo/test.txt returns 200"
+# else
+#     fail "GET /foo/test.txt returns ${status} instead of 200"
+# fi
+
 print_title "${TEST_NUMBER}. Simple GET"
 TEST_NUMBER=$((TEST_NUMBER + 1))
 
@@ -245,10 +256,10 @@ TEST_NUMBER=$((TEST_NUMBER + 1))
 
 status="$(http_status "${BASE_URL}/uploads/")"
 
-if [ "$status" = "404" ]; then
-    pass "GET /uploads/ returns temporary 404"
+if [ "$status" = "403" ]; then
+    pass "GET /uploads/ is forbidden when directory listing is disabled"
 else
-    fail "GET /uploads/ returns ${status} instead of 404"
+    fail "GET /uploads/ returns ${status} instead of 403"
 fi
 
 
