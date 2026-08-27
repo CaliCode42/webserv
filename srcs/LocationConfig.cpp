@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/17 10:31:09 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/24 19:28:51 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/25 16:29:18 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -94,6 +94,9 @@ bool	LocationConfig::isCgiEnabled()const
 
 bool	LocationConfig::isMethodAllowed(const string& method)const
 {
+	if (_allowedMethods.empty())
+		return (true);
+
 	stringVector::const_iterator	it;
 
 	for (it = _allowedMethods.begin(); it != _allowedMethods.end(); ++it)

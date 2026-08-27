@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/25 19:50:52 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/13 16:55:47 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/25 18:04:49 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,67 +24,98 @@
 
 MethodHandler::MethodHandler(const ServerConfig& config) : _config(config) {}
 
-HttpResponse MethodHandler::handle(const HttpRequest& req)
+HttpResponse MethodHandler::handle(const HttpRequest& req, const LocationConfig& location)
 {
 	if (req.getMethod() == "GET")
 	{
-		std::string path = _config.getRoot() + req.getUri();
-		return handleGet(path);
+		std::string path = resolvePath(req, location);
+
+		return handleGet(path, location);
 	}
+
 	if (req.getMethod() == "POST")
-	{
 		return handlePost(req);
-	}
+
 	if (req.getMethod() == "DELETE")
 	{
 		std::string path = _config.getRoot() + req.getUri();
+		
 		return handleDelete(path);
 	}
 	
 	HttpResponse res;
+
 	res.setStatus(501);
 	res.setBody("<h1>Not Implemented</h1>", "text/html");
+
 	return res;
 }
 
-HttpResponse MethodHandler::handleGet(const std::string& path)
+HttpResponse MethodHandler::handleGet(const std::string& path, const LocationConfig& location)
 {
-
+	std::string	resourcePath = path;
 	struct stat st;
-	if (stat(path.c_str(), &st) != 0)
+
+	if (stat(resourcePath.c_str(), &st) != 0)
 	{
 		HttpResponse res;
+
 		res.setStatus(404);
 		res.setBody("<h1>NOT FOUND</h1>", "text/html");
+		
 		return res;
 	}
 
 	if (S_ISDIR(st.st_mode))
 	{
-		HttpResponse res;
-		res.setStatus(404);
-		res.setBody("<h1>Not Found</h1>", "text/html");
-		return res;
+		if (location.getIndex().empty())
+		{
+			HttpResponse res;
+	
+			res.setStatus(404);
+			res.setBody("<h1>Not Found</h1>", "text/html");
+		
+			return res;
+		}
+		
+		if (!resourcePath.empty() && resourcePath[resourcePath.size() - 1] != '/')
+			resourcePath += '/';
+
+		resourcePath += location.getIndex();
+
+		if (stat(resourcePath.c_str(), & st) != 0 || S_ISDIR(st.st_mode))
+		{
+			HttpResponse res;
+	
+			res.setStatus(404);
+			res.setBody("<h1>Not Found</h1>", "text/html");
+		
+			return res;
+		}
 	}
 
-	std::ifstream file(path.c_str());
+	std::ifstream file(resourcePath.c_str());
 
 	if (!file.is_open())
 	{
 		HttpResponse res;
+
 		res.setStatus(500);
 		res.setBody("<h1>Internal Server Error</h1>", "text/html");
+		
 		return res;
 	}
 
 	std::ostringstream ss;
+
 	ss << file.rdbuf();
 		
 	HttpResponse res;
+
 	res.setStatus(200);
 	res.setBody(ss.str(), getContentType(path));
-	return res;
 	
+	return res;
 }
 
 std::string MethodHandler::getContentType(const std::string& path) const
@@ -112,6 +143,34 @@ std::string MethodHandler::getContentType(const std::string& path) const
 		return "image/gif";
 
 	return "application/octet-stream";
+}
+
+std::string	MethodHandler::resolvePath(const HttpRequest& req,
+	const LocationConfig& location) const
+{
+	std::string	uri = req.getUri();
+	std::string::size_type	queryPos = uri.find('?');
+
+	if (queryPos != std::string::npos)
+		uri.erase(queryPos);
+
+	const std::string&	locationPath = location.getPath();
+
+	if (locationPath != "/"
+		&& uri.compare(0, locationPath.size(), locationPath) == 0)
+	{
+		uri.erase(0, locationPath.size());
+	}
+
+	if (!uri.empty() && uri[0] == '/')
+		uri.erase(0, 1);
+
+	std::string	root = location.getRoot();
+
+	if (!root.empty() && root[root.size() - 1] != '/')
+		root += '/';
+
+	return (root + uri);
 }
 
 HttpResponse MethodHandler::handlePost(const HttpRequest& req)

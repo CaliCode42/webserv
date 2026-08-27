@@ -24,6 +24,15 @@ TEST_NUMBER=1
 mkdir -p "${TMP_DIR}"
 
 create_test_files() {
+	mkdir -p www/images
+	mkdir -p www/private
+
+	printf "location images root\n" > www/images/location_root_test.txt
+	printf "location private root\n" > www/private/private_root_test.txt
+
+	printf "body { margin: 0; }\n" > www/style.css
+	printf "unknown content\n" > www/test.unknown
+
 	cat > www/index.html <<'EOF'
 <!DOCTYPE html>
 <html>
@@ -65,14 +74,14 @@ create_test_files() {
 </body>
 </html>
 EOF
-	printf "body { margin: 0; }\n" > www/style.css
-	printf "unknown content\n" > www/test.unknown
 }
 
 cleanup_test_files() {
 	# rm www/index.html
 	rm www/style.css
 	rm www/test.unknown
+	rm -f www/images/location_root_test.txt
+	rm -f www/private/private_root_test.txt
 }
 
 cleanup() {
@@ -1141,20 +1150,24 @@ fi
 print_title "${TEST_NUMBER}. Idle socket is closed by server"
 TEST_NUMBER=$((TEST_NUMBER + 1))
 
-IDLE_OUTPUT="${TMP_DIR}/idle_socket.txt"
+if exec 3<>/dev/tcp/"$HOST"/"$PORT"; then
+	if IFS= read -r -t $((CLIENT_TIMEOUT_VALUE + 2)) -u 3 _; then
+		read_status=0
+	else
+		read_status=$?
+	fi
 
-nc "$HOST" "$PORT" > "${IDLE_OUTPUT}" 2>/dev/null &
-nc_pid=$!
+	if [ "$read_status" -eq 1 ]; then
+		pass "Idle socket is closed by server after timeout"
+	elif [ "$read_status" -gt 128 ]; then
+		fail "Idle socket is still open after client timeout"
+	else
+		fail "Idle socket produced unexpected result (read status: ${read_status})"
+	fi
 
-sleep 12
-
-if kill -0 "$nc_pid" 2>/dev/null; then
-    fail "Idle socket is still open after client timeout"
-    kill "$nc_pid" 2>/dev/null || true
-    wait "$nc_pid" 2>/dev/null || true
+	exec 3>&-
 else
-    wait "$nc_pid" 2>/dev/null || true
-    pass "Idle socket is closed by server after timeout"
+	fail "Could not open idle socket"
 fi
 
 
@@ -1590,6 +1603,59 @@ if [ "$(http_status "${BASE_URL}/index.html")" = "200" ]; then
 else
 	fail "Server no longer serves normal requests after CGI tests"
 fi
+
+
+print_title "${TEST_NUMBER}. GET location root"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+body="$(curl -sS "${BASE_URL}/images/location_root_test.txt" 2>/dev/null)"
+status="$(http_status "${BASE_URL}/images/location_root_test.txt")"
+
+if [ "$status" = "200" ]; then
+	pass "GET resource through location root returns 200"
+else
+	fail "GET resource through location root returns ${status} instead of 200"
+fi
+
+if [ "$body" = "location images root" ]; then
+	pass "Location root resolves to the expected filesystem resource"
+else
+	fail "Location root returned unexpected content"
+fi
+
+
+print_title "${TEST_NUMBER}. GET longest matching location root"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+body="$(curl -sS "${BASE_URL}/images/private/private_root_test.txt" 2>/dev/null)"
+status="$(http_status "${BASE_URL}/images/private/private_root_test.txt")"
+
+if [ "$status" = "200" ]; then
+	pass "GET resource through nested location returns 200"
+else
+	fail "GET nested location resource returns ${status} instead of 200"
+fi
+
+if [ "$body" = "location private root" ]; then
+	pass "Longest matching location root is used"
+else
+	fail "Nested location did not use the expected root"
+fi
+
+
+print_title "${TEST_NUMBER}. GET location root with query string"
+TEST_NUMBER=$((TEST_NUMBER + 1))
+
+body="$(curl -sS \
+	"${BASE_URL}/images/location_root_test.txt?foo=bar" \
+	2>/dev/null)"
+
+if [ "$body" = "location images root" ]; then
+	pass "Query string is excluded from filesystem path resolution"
+else
+	fail "Query string affected filesystem path resolution"
+fi
+
 
 print_title "Summary"
 
