@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/23 15:14:58 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/26 23:21:22 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/27 04:27:28 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,6 +34,7 @@ private:
 	std::string readFile(const std::string& path);
 	
 	std::string peek() const;
+	std::string peekServerRoot() const;
 	std::string next();
 	void expect(const std::string& expected);
 

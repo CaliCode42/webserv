@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   ServerConfig.hpp                                   :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/07/20 15:35:09 by tcali             #+#    #+#             */
+/*   Updated: 2026/08/27 03:54:10 by sdossa           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #ifndef SERVERCONFIG_HPP
 #define SERVERCONFIG_HPP
 
@@ -37,8 +49,6 @@ public:
 	const std::vector<LocationConfig>& getLocations() const;
 	void addLocation(const LocationConfig& loc);
 
-	// attendu par Server.cpp (Tommy) : trouve la location dont le "path"
-	// correspond le mieux (prefixe le plus long) a l'URI demandee
 	const LocationConfig* findLocation(const std::string& uri) const;
 };
 

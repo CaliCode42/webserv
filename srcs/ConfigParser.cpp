@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/23 15:14:34 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/26 23:26:55 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/27 04:43:27 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -125,6 +125,35 @@ std::size_t ConfigParser::parseSize(const std::string& value)
 	return static_cast<std::size_t>(number) * multiplier;
 }
 
+
+std::string ConfigParser::peekServerRoot() const
+{
+	std::size_t pos = _pos;
+	int depth = 0;
+
+	while (pos < _tokens.size())
+	{
+		const std::string& tok = _tokens[pos];
+		
+		if (tok == "{")
+		{
+			++depth;
+		}
+		else if (tok == "}")
+		{
+			if (depth == 0)
+				break;
+			--depth;
+		}
+		else if (tok == "root" && depth == 0 && pos + 1 < _tokens.size())
+		{
+			return _tokens[pos + 1];
+		}
+		++pos;
+	}
+	return "www";
+}
+
 LocationConfig ConfigParser::parseLocation(const std::string& serverRoot)
 {
 	LocationConfig loc;
@@ -198,6 +227,8 @@ ServerConfig ConfigParser::parseServer()
 
 	expect("{");
 
+	std::string serverRoot = peekServerRoot();
+
 	while (peek() != "}")
 	{
 		std::string directive = next();
@@ -244,7 +275,7 @@ ServerConfig ConfigParser::parseServer()
 		}
 		else if (directive == "location")
 		{
-			server.addLocation(parseLocation(server.getRoot()));
+			server.addLocation(parseLocation(serverRoot));
 		}
 		else
 			throw std::runtime_error("ConfigParser: unknown directive in server: " + directive);

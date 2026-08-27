@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   LocationConfig.hpp                                 :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/08/16 15:29:36 by sdossa            #+#    #+#             */
+/*   Updated: 2026/08/27 03:51:49 by sdossa           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #ifndef LOCATIONCONFIG_HPP
 #define LOCATIONCONFIG_HPP
 
@@ -54,7 +66,7 @@ public:
 	bool isCgiExtension(const std::string& ext) const;
 	std::string getCgiInterpreter(const std::string& ext) const;
 
-	// alias attendu par CgiHandler.cpp (Tommy) - meme logique que getCgiInterpreter
+	
 	std::string getCgiPath(const std::string& extension) const;
 };
 

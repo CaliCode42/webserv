@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 22:09:59 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/24 14:37:52 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/27 04:07:54 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -201,6 +201,10 @@ bool HttpRequest::parseChunkSize()
 		}
 		_buffer.erase(0, trailerEnd + 4);
 		_chunkSize = 0;
+		//recalculate CL from the real body
+		std::ostringstream lenOss;
+		lenOss << _body.size();
+		_headers["content-length"] = lenOss.str();
 		_state = STATE_COMPLETE;
 		return true;
 	}

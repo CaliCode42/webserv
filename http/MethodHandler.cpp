@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/25 19:50:52 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/27 00:01:28 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/27 04:01:35 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -175,7 +175,7 @@ std::string MethodHandler::buildAutoindex(const std::string& path, const std::st
 	
 	std::ostringstream html;
 	html << "<html><head><title>Index of " << uriPath << "</title></head><body>";
-	html << "<h1>Index of " << uriPath << "</h1></hr><u1>";
+	html << "<h1>Index of " << uriPath << "</h1><hr><ul>";
 
 	std::string base = uriPath;
 	if (base.empty() || base[base.size() - 1] != '/')
