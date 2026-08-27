@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpRequest.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
+/*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 22:09:59 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/27 04:07:54 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/27 16:30:54 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -90,6 +90,12 @@ bool HttpRequest::parseRequestLine()
 // "Host: localhost\r\n" ... "\r\n"
 bool HttpRequest::parseHeaders()
 {
+	if (_buffer.size() > MAX_BUFFER_SIZE)
+	{
+		setError(431); // Header trop large 
+		return false;
+	}	
+
 	while (true)
 	{
 		std::string::size_type eol = _buffer.find("\r\n");
@@ -134,6 +140,7 @@ void HttpRequest::onHeadersComplete()
 	//T-E CHUNKED
 	std::string transferEncoding = getHeader("Transfer-Encoding");
 	if (toLower(transferEncoding) == "chunked")
+	if (toLower(transferEncoding) == "chunked")
 	{
 		_headers.erase("content-length"); //delete fantom C-L
 		_state = STATE_CHUNK_SIZE;
@@ -147,19 +154,37 @@ void HttpRequest::onHeadersComplete()
 		_state = STATE_COMPLETE;
 		return;
 	}
-	std::istringstream iss(contentLengthStr);
-	std::string extra;
-	if (!(iss >> _contentLength) || (iss >> extra))
+
+	if (contentLengthStr[0] == '-')
 	{
 		setError(400);
 		return;
 	}
-	if (_contentLength > _maxBodySize) //max bodysize
+
+	std::istringstream iss(contentLengthStr);
+
+	iss >> _contentLength;
+
+	if (iss.fail())
+	{
+		setError(400);
+		return;
+	}
+
+	char extra;
+	if (iss >> extra)
+	{
+		setError(400);
+		return;
+	}
+
+	if (_contentLength > _MAX_BODY_SIZE)
 	{
 		setError(413);
 		return;
 	}
-	_state = STATE_BODY;	
+
+	_state = STATE_BODY;
 }
 
 // Sized body: wait til _contentLength bytes are buffered
@@ -182,64 +207,95 @@ bool HttpRequest::parseBody()
 // "1a\r\n" <26 bytes> "\r\n" "0\r\n" "\r\n"
 bool HttpRequest::parseChunkSize()
 {
-	std::string::size_type eol = _buffer.find("\r\n");
-	if (eol == std::string::npos)
-		return false;
-	
-	std::string line = _buffer.substr(0, eol);
-	
-	//if last chunk ="0", need the next 2 octets "\r\n"
-	if (line == "0")
-	{
-		//trailers (if any) end with empty line "\r\n\r\n"
-		std::string::size_type trailerEnd = _buffer.find("\r\n\r\n");
-		if (trailerEnd == std::string::npos)
-		{
-			if (_buffer.size() > 8192)
-				setError(400);
-			return false;
-		}
-		_buffer.erase(0, trailerEnd + 4);
-		_chunkSize = 0;
-		//recalculate CL from the real body
-		std::ostringstream lenOss;
-		lenOss << _body.size();
-		_headers["content-length"] = lenOss.str();
-		_state = STATE_COMPLETE;
-		return true;
-	}
+    std::string::size_type eol = _buffer.find("\r\n");
 
-	//extract line, convert hexa
-	_buffer.erase(0, eol + 2);
-	std::istringstream iss(line);
-	iss >> std::hex >> _chunkSize;
-	if(iss.fail())
-	{
-		setError(400);
-		return false;
-	}
+    if (eol == std::string::npos)
+        return false;
 
-	if (_chunkSize > _maxBodySize)
+    std::string line = _buffer.substr(0, eol);
+
+    // Last chunk
+    if (line == "0")
+    {
+        // Remove "0\r\n"
+        _buffer.erase(0, eol + 2);
+
+        // Trailers end with an empty line: "\r\n"
+        std::string::size_type trailersEnd = _buffer.find("\r\n\r\n");
+
+        if (trailersEnd != std::string::npos)
+        {
+            _buffer.erase(0, trailersEnd + 4);
+            _chunkSize = 0;
+            _state = STATE_COMPLETE;
+            return true;
+        }
+
+        // No trailer: just the final CRLF
+        if (_buffer.size() >= 2 && _buffer.substr(0, 2) == "\r\n")
+        {
+            _buffer.erase(0, 2);
+            _chunkSize = 0;
+			//recalculate CL from the real body
+			std::ostringstream lenOss;
+			lenOss << _body.size();
+			_headers["content-length"] = lenOss.str();
+            _state = STATE_COMPLETE;
+            return true;
+        }
+
+        return false;
+    }
+
+    std::istringstream iss(line);
+    iss >> std::hex >> _chunkSize;
+
+    if (iss.fail())
+    {
+        setError(400);
+        return false;
+    }
+
+    char extra;
+
+    if (iss >> extra)
+    {
+        setError(400);
+        return false;
+    }
+
+	if (_body.size() > _MAX_BODY_SIZE || _chunkSize > _MAX_BODY_SIZE - _body.size())
 	{
 		setError(413);
 		return false;
 	}
-	
-	_state = STATE_CHUNK_DATA;
-	return true;
+
+    _buffer.erase(0, eol + 2);
+    _state = STATE_CHUNK_DATA;
+
+    return true;
 }
 
 
 bool HttpRequest::parseChunkData()
 {
-	//if buffer too short, return false
+	// si body trop long, return false
+	if (_body.size() > _MAX_BODY_SIZE
+        || _chunkSize > _MAX_BODY_SIZE - _body.size())
+    {
+        setError(413);
+        return false;
+    }
+	//si buffer trop court, return false
 	if (_buffer.size() < _chunkSize + 2)
 		return false;
+	
 	if (_buffer.substr(_chunkSize, 2) != "\r\n")
-	{
-		setError(400);
-		return false;
-	}
+    {
+        setError(400);
+        return false;
+    }
+	
 	_body.append(_buffer, 0, _chunkSize);
 	_buffer.erase(0, _chunkSize + 2);
 	if (_body.size() > _maxBodySize)

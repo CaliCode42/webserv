@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
+/*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:33:43 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/27 00:16:36 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/27 17:07:00 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -252,6 +252,15 @@ void	Server::handleClientRead(Client& client)
 	try {
 		const LocationConfig	*location = _config.findLocation(request.getUri());
 
+		if (location != NULL && !location->isMethodAllowed(request.getMethod()))
+		{
+			HttpResponse	response = buildErrorResponse(405);
+
+			client.appendToWriteBuffer(response.serialize());
+			enableClientWrite(client.getFd());
+			return ;
+		}
+
 		if (location != NULL && CgiHandler::isCgiRequest(request.getUri(), *location))
 		{
 			if (!startCgiProcess(client, *location))
@@ -267,7 +276,16 @@ void	Server::handleClientRead(Client& client)
 			return ;
 		}
 
-		HttpResponse	response = _handler.handle(request);
+		if (location == NULL)
+		{
+			HttpResponse	response = buildErrorResponse(404);
+
+			client.appendToWriteBuffer(response.serialize());
+			enableClientWrite(client.getFd());
+			return ;
+		}
+
+		HttpResponse	response = _handler.handle(request, *location);
 
 		client.appendToWriteBuffer(response.serialize());
 		enableClientWrite(client.getFd());

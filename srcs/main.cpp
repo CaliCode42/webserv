@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
+/*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/22 14:50:12 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/26 23:42:14 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/27 17:06:31 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,12 +47,14 @@ int main()
 
 		server.initSocket();
 		server.run();
+		server.run();
 	}
 	catch (std::runtime_error&	e)
 	{
 		std::cerr << "Error: " << e.what() << std::endl;
 		return (1);
 	}
+	return (0);
 	return (0);
 }
 

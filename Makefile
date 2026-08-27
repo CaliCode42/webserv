@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+         #
+#    By: tcali <tcali@student.42.fr>                +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/06/22 14:54:39 by tcali             #+#    #+#              #
-#    Updated: 2026/08/27 01:13:13 by sdossa           ###   ########.fr        #
+#    Updated: 2026/08/27 16:21:13 by tcali            ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -25,6 +25,10 @@ SRC=\
 	$(SRC_DIR)/Server.cpp\
 	$(SRC_DIR)/Client.cpp\
 	$(SRC_DIR)/ServerConfig.cpp\
+	$(SRC_DIR)/LocationConfig.cpp\
+	$(SRC_DIR)/ConfigParser.cpp\
+	$(SRC_DIR)/CgiHandler.cpp\
+	$(SRC_DIR)/CgiProcess.cpp\
 	$(SRC_DIR)/LocationConfig.cpp\
 	$(SRC_DIR)/ConfigParser.cpp\
 	$(SRC_DIR)/CgiHandler.cpp\

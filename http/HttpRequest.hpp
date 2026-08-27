@@ -3,19 +3,22 @@
 /*                                                        :::      ::::::::   */
 /*   HttpRequest.hpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
+/*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 22:09:53 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/24 13:52:46 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/27 16:32:26 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef HTTPREQUEST_HPP
-#define HTTPREQUEST_HPP
+# define HTTPREQUEST_HPP
 
-#include <string>
-#include <map>
+# ifndef MAX_BUFFER_SIZE
+#  define MAX_BUFFER_SIZE 32768
+# endif
 
+# include <string>
+# include <map>
 
 class HttpRequest
 {
@@ -70,6 +73,8 @@ private:
 	size_t _chunkSize; //
 	//size_t _cookies;
 	std::size_t _maxBodySize;
+	static const size_t	_MAX_BODY_SIZE = 1024 * 1024;
+
 	
 	void setError(int code);
 	void onHeadersComplete(); // choice = no body? sized body? chunked?
