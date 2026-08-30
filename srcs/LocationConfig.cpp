@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/16 15:29:03 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/27 03:53:19 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/30 10:36:57 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,9 +14,10 @@
 
 LocationConfig::LocationConfig()
 	: _path(""), _root("www"), _index("index.html"), _autoindex(false),
-	  _redirect(""), _uploadEnabled(false), _uploadPath("")
+	  _redirect(""), _uploadEnabled(false), _uploadPath(""), _rootIsExplicit(false)
 {
 }
+
 
 LocationConfig::~LocationConfig()
 {
@@ -41,6 +42,18 @@ void LocationConfig::setRoot(const std::string& root)
 {
 	_root = root;
 }
+
+
+bool LocationConfig::hasExplicitRoot() const
+{
+	return (_rootIsExplicit);
+}
+
+void LocationConfig::setRootExplicit(bool value)
+{
+	_rootIsExplicit = value;
+}
+
 
 std::string LocationConfig::getIndex() const
 {

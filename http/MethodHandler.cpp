@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/25 19:50:52 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/27 04:01:35 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/30 11:26:29 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -146,8 +146,18 @@ std::string MethodHandler::resolvePath(const std::string& uriPath, const Locatio
 	if (location == NULL)
 		return _config.getRoot() + uriPath;
 
-	std::string locPath = location->getPath();
 	std::string root = location->getRoot();
+	
+	if (location->hasExplicitRoot())
+	{
+		//root inherit server : keep uri complete
+		if (!root.empty() && root[root.size() - 1] == '/' && !uriPath.empty() && uriPath[0]== '/')
+			return root + uriPath.substr(1);
+		return root + uriPath;
+	}
+
+	//explicit root on this location : withdraw prefix
+	std::string locPath = location->getPath();
 	std::string relative = uriPath;
 	
 	//strip location prefix: /cgi/test.py under location /cgi -> /test.py
@@ -166,6 +176,7 @@ std::string MethodHandler::resolvePath(const std::string& uriPath, const Locatio
 	return root + relative;
 
 }
+
 
 std::string MethodHandler::buildAutoindex(const std::string& path, const std::string& uriPath) const
 {

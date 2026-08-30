@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/23 15:14:34 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/27 04:43:27 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/30 11:34:10 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -170,6 +170,7 @@ LocationConfig ConfigParser::parseLocation(const std::string& serverRoot)
 		if (directive == "root")
 		{
 			loc.setRoot(next());
+			loc.setRootExplicit(true);
 			expect(";");
 		}
 		else if (directive == "index")
