@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:16:04 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/24 19:29:36 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/27 23:32:19 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,67 +30,80 @@
 #include "CgiProcess.hpp"
 #include "CgiHandler.hpp"
 
+
+struct ListeningSocket
+{
+	int					fd;
+	const ServerConfig	*config;
+};
+
 class Server
 {
 private:
-	int							_port;
-	int							_serverSocket;
+	std::vector<ServerConfig>						_configs;
+	std::vector<ListeningSocket>					_listeningSockets;
 
-	std::vector<pollfd>			_fds;
-	std::vector<int>			_clientsToRemove;
-	std::map<int, Client>		_clients;
 
-	std::map<int, CgiProcess*>	_cgiProcesses;
-	std::map<int, int>			_cgiStdinFds;
-	std::map<int, int>			_cgiStdoutFds;
-	
-	ServerConfig				_config;
-	MethodHandler				_handler;
-	
-	static const std::time_t	_CLIENT_TIMEOUT = 10;
-	static const std::time_t	_POLL_TIMEOUT = 1000;
-	static const std::time_t	_CGI_TIMEOUT = 5;
+	std::vector<pollfd>								_fds;
+	std::vector<int>								_clientsToRemove;
+	std::map<int, Client>							_clients;
+	std::map<int, const ServerConfig*>				_clientConfigs;
+
+	std::map<int, CgiProcess*>						_cgiProcesses;
+	std::map<int, int>								_cgiStdinFds;
+	std::map<int, int>								_cgiStdoutFds;
+
+	std::map<const ServerConfig*, MethodHandler*>	_handlers;
+
+	static const std::time_t						_CLIENT_TIMEOUT = 10;
+	static const std::time_t						_POLL_TIMEOUT = 1000;
+	static const std::time_t						_CGI_TIMEOUT = 5;
 
 	HttpResponse	buildErrorResponse(int statusCode);
 
 public:
-	Server(int port, const ServerConfig& config);
+	Server(const std::vector<ServerConfig>& configs);
 	~Server();
 
-	void	initSocket();
+	int						createListeningSocket(unsigned int port);
+	void					initSockets();
+	const ListeningSocket	*findListeningSocket(int fd) const;
 
-	void	run();
+	const ServerConfig		*getClientConfig(int clientFd) const;
+	MethodHandler			*getClientHandler(int clientFd);
 
-	void	acceptClient();
+	void					run();
 
-	void	handleClientRead(Client& client);
-	void	handleClientWrite(Client& client);
+	void					acceptClient(const ListeningSocket& listener);
 
-	void	enableClientWrite(int fd);
-	void	disableClientWrite(int fd);
-	void	disableClientEvents(int fd);
+	void					handleClientRead(Client& client);
+	void					handleClientWrite(Client& client);
 
-	void	markClientForRemoval(int fd);
-	bool	isMarkedForRemoval(int fd)const;
-	void	removeMarkedClients();
-	void	removeClient(int fd);
+	void					enableClientWrite(int fd);
+	void					disableClientWrite(int fd);
+	void					disableClientEvents(int fd);
 
-	void	checkClientTimeouts();
-	void	checkCgiProcesses();
+	void					markClientForRemoval(int fd);
+	bool					isMarkedForRemoval(int fd)const;
+	void					removeMarkedClients();
+	void					removeClient(int fd);
 
-	void	handleCgiEvents(int fd, short revents);
-	void	handleCgiStdinEvent(int fd, short revents);
-	void	handleCgiStdoutEvent(int fd, short revents);
+	void					checkClientTimeouts();
+	void					checkCgiProcesses();
 
-	bool	isCgiStdinFd(int fd) const;
-	bool	isCgiStdoutFd(int fd) const;
+	void					handleCgiEvents(int fd, short revents);
+	void					handleCgiStdinEvent(int fd, short revents);
+	void					handleCgiStdoutEvent(int fd, short revents);
 
-	void	addPollFd(int fd, short events);
-	void	removePollFd(int fd);
+	bool					isCgiStdinFd(int fd) const;
+	bool					isCgiStdoutFd(int fd) const;
 
-	bool	startCgiProcess(Client& client, const LocationConfig& location);
-	bool	buildCgiResponse(const std::string& output, HttpResponse& response);
-	void	removeCgiProcess(int clientFd);
+	void					addPollFd(int fd, short events);
+	void					removePollFd(int fd);
+
+	bool					startCgiProcess(Client& client, const LocationConfig& location);
+	bool					buildCgiResponse(const std::string& output, HttpResponse& response);
+	void					removeCgiProcess(int clientFd);
 };
 
 #endif

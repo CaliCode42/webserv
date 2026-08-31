@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
+/*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 23:52:39 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/24 09:07:33 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/27 17:10:35 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,13 +37,17 @@ void HttpResponse::setHeader(const std::string& key, const std::string&  value)
 std::string HttpResponse::serialize() const
 {
 	std::ostringstream out;
+
 	out << "HTTP/1.1 " << _status << " " << reasonPhrase(_status) << "\r\n";
 	out << "Content-Length: " << _body.size() << "\r\n";
 	out << "Server: webserv/1.0\r\n";
+
 	for (size_t i = 0; i < _headers.size(); ++i)
 		out << _headers[i].first << ": " << _headers[i].second << "\r\n";
+
 	out << "\r\n";
 	out << _body;
+	
 	return out.str();
 }
 
@@ -55,13 +59,13 @@ std::string HttpResponse::reasonPhrase(int code)
 		case 201: return "Created";
 		case 204: return "No Content";
 		case 301: return "Moved Permanently";
+		case 302: return "Found";
 		case 400: return "Bad Request";
 		case 403: return "Forbidden";
 		case 404: return "Not Found";
 		case 405: return "Method Not Allowed";
-		case 413: return "Content Too Large";
+		case 413: return "Payload too Large";
 		case 414: return "URI Too Long";
-		case 431: return "Request Header Fields Too Large";
 		case 500: return "Internal Server Error";
 		case 501: return "Not Implemented";
 		default:  return "Unknown";

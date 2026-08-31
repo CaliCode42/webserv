@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/25 19:50:52 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/30 11:26:29 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/30 23:53:28 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -110,11 +110,6 @@ HttpResponse MethodHandler::handle(const HttpRequest& req)
 		response.setStatus(301);
 		response.setHeader("Location", location->getRedirect());
 		response.setBody("<h1>301 - Moved Permanently</h1>", "text/html");
-	}
-	else if (location != NULL && !location ->getAllowedMethods().empty()
-			&& !location->isMethodAllowed(req.getMethod()))
-	{
-		response = makeError(405);
 	}
 	else if (req.getMethod() == "GET")
 	{
