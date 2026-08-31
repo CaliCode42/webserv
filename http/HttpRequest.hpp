@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 22:09:53 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/27 16:32:26 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/28 17:10:29 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -73,8 +73,6 @@ private:
 	size_t _chunkSize; //
 	//size_t _cookies;
 	std::size_t _maxBodySize;
-	static const size_t	_MAX_BODY_SIZE = 1024 * 1024;
-
 	
 	void setError(int code);
 	void onHeadersComplete(); // choice = no body? sized body? chunked?

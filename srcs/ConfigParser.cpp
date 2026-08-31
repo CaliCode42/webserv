@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigParser.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
+/*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/23 15:14:34 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/31 00:16:23 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/31 19:38:40 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -234,7 +234,7 @@ ServerConfig ConfigParser::parseServer()
 	{
 		std::string directive = next();
 
-		if (directive == "listen" || directive == "root" || directive == "client_max_body_size")
+		if (directive == "listen" || directive == "root" || directive == "server_name" || directive == "client_max_body_size")
 		{
 			if (seenDirectives.find(directive) != seenDirectives.end())
 				throw std::runtime_error("ConfigParser: duplicate directive '" + directive + "' in server block");
@@ -256,6 +256,11 @@ ServerConfig ConfigParser::parseServer()
 		else if (directive == "root")
 		{
 			server.setRoot(next());
+			expect(";");
+		}
+		else if (directive == "server_name")
+		{
+			server.setServerName(next());
 			expect(";");
 		}
 		else if (directive == "client_max_body_size")

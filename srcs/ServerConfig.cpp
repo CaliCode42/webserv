@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/20 15:40:51 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/27 17:07:33 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/28 16:09:34 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,6 +40,16 @@ unsigned int ServerConfig::getPort() const
 void ServerConfig::setPort(unsigned int port)
 {
 	_port = port;
+}
+
+const std::string&	ServerConfig::getServerName() const
+{
+	return (_serverName);
+}
+
+void	ServerConfig::setServerName(const std::string& name)
+{
+	_serverName = name;
 }
 
 void ServerConfig::setClientMaxBodySize(std::size_t size)
@@ -101,3 +111,8 @@ const LocationConfig* ServerConfig::findLocation(const std::string& uri) const
 	}
 	return (best);
 }
+
+// bool	ServerConfig::matchesServerName(std::string host) const
+// {
+// 	if 
+// }
