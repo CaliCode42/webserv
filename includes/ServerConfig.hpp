@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/20 15:35:09 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/27 17:01:55 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/28 16:09:22 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,32 +24,38 @@ typedef std::vector<LocationConfig> locationVector;
 class ServerConfig
 {
 private:
-	std::string _root;
-	unsigned int _port;
-	std::map<int, std::string> _errorPages;
-	std::size_t _clientMaxBodySize;
-	std::vector<LocationConfig> _locations;
+	std::string					_root;
+	unsigned int				_port;
+	std::map<int, std::string>	_errorPages;
+	std::size_t					_clientMaxBodySize;
+	std::vector<LocationConfig>	_locations;
+	std::string					_serverName;
 
 public:
 	ServerConfig();
 	~ServerConfig();
 
-	std::string getRoot() const;
-	void setRoot(const std::string& root);
+	std::string							getRoot() const;
+	void								setRoot(const std::string& root);
 
-	unsigned int getPort() const;
-	void setPort(unsigned int port);
+	unsigned int						getPort() const;
+	void 								setPort(unsigned int port);
 
-	const std::map<int, std::string>& getErrorPages() const;
-	void setErrorPage(int code, const std::string& path);
+	const std::string&					getServerName() const;
+	void								setServerName(const std::string& name);
 
-	std::size_t getClientMaxBodySize() const;
-	void setClientMaxBodySize(std::size_t size);
+	const std::map<int, std::string>&	getErrorPages() const;
+	void								setErrorPage(int code, const std::string& path);
 
-	const std::vector<LocationConfig>& getLocations() const;
-	void addLocation(const LocationConfig& loc);
+	std::size_t							getClientMaxBodySize() const;
+	void								setClientMaxBodySize(std::size_t size);
 
-	const LocationConfig* findLocation(const std::string& uri) const;
+	const std::vector<LocationConfig>&	getLocations() const;
+	void								addLocation(const LocationConfig& loc);
+
+	const LocationConfig*				findLocation(const std::string& uri) const;
+
+	// bool	matchesServerName(std::string host) const;
 };
 
 #endif

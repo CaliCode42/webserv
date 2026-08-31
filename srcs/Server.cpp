@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:33:43 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/27 23:37:22 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/28 17:23:14 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,7 +65,7 @@ Server::~Server()
 int	Server::createListeningSocket(unsigned int port)
 {
 	int	serverSocket = socket(AF_INET, SOCK_STREAM, 0);
-	if (serverSocket == -1)
+	if (serverSocket < 0 )
 		throw std::runtime_error("failed to init socket.");
 
 	sockaddr_in	addr;
@@ -110,14 +110,23 @@ void	Server::initSockets()
 {	
 	for (std::size_t i = 0; i < _configs.size(); ++i)
 	{
+		ListeningSocket	*listener = findListeningSocketByPort(_configs[i].getPort());
+
+		if (listener != NULL)
+		{
+			listener->configs.push_back(&_configs[i]);
+			continue ;
+		}
+		
 		int	fd = createListeningSocket(_configs[i].getPort());
 
-		ListeningSocket	listener;
+		ListeningSocket	newListener;
 
-		listener.fd = fd;
-		listener.config = &_configs[i];
+		newListener.fd = fd;
+		newListener.port = _configs[i].getPort();
+		newListener.configs.push_back(&_configs[i]);
 
-		_listeningSockets.push_back(listener);
+		_listeningSockets.push_back(newListener);
 
 		pollfd	pfd;
 
@@ -129,7 +138,8 @@ void	Server::initSockets()
 	}
 }
 
-const ListeningSocket	*Server::findListeningSocket(int fd) const
+
+const ListeningSocket *Server::findListeningSocket(int fd) const
 {
 	for (std::size_t i = 0; i < _listeningSockets.size(); ++i)
 	{
@@ -138,6 +148,47 @@ const ListeningSocket	*Server::findListeningSocket(int fd) const
 	}
 
 	return (NULL);
+}
+
+ListeningSocket	*Server::findListeningSocketByPort(unsigned int port)
+{
+	for (std::size_t i = 0; i < _listeningSockets.size(); ++i)
+	{
+		if (_listeningSockets[i].port == port)
+			return (&_listeningSockets[i]);
+	}
+
+	return (NULL);
+}
+
+const ServerConfig	*Server::selectServerConfig(
+	int clientFd,
+	const HttpRequest& request) const
+{
+	std::map<int, const ListeningSocket*>::const_iterator	it =
+		_clientListeners.find(clientFd);
+
+	if (it == _clientListeners.end() || it->second == NULL)
+		return (NULL);
+
+	const ListeningSocket	*listener = it->second;
+
+	if (listener->configs.empty())
+		return (NULL);
+
+	std::string	host = request.getHeader("Host");
+
+	std::size_t	colon = host.find(':');
+	if (colon != std::string::npos)
+		host = host.substr(0, colon);
+
+	for (std::size_t i = 0; i < listener->configs.size(); ++i)
+	{
+		if (listener->configs[i]->getServerName() == host)
+			return (listener->configs[i]);
+	}
+
+	return (listener->configs[0]);
 }
 
 const ServerConfig	*Server::getClientConfig(int clientFd) const
@@ -248,9 +299,12 @@ void	Server::run()
 
 void	Server::acceptClient(const ListeningSocket& listener)
 {
+	if (listener.configs.empty())
+		return ;
+
 	while (true)
 	{
-		int clientFd = accept(listener.fd, NULL, NULL);
+		int	clientFd = accept(listener.fd, NULL, NULL);
 
 		if (clientFd < 0)
 			return ;
@@ -260,27 +314,34 @@ void	Server::acceptClient(const ListeningSocket& listener)
 			close(clientFd);
 			continue ;
 		}
-		
+
+		_clients.insert(std::make_pair(clientFd, Client(clientFd)));
+
+		_clientConfigs[clientFd] = listener.configs[0];
+		_clientListeners[clientFd] = &listener;
+
+		std::map<int, Client>::iterator clientIt = _clients.find(clientFd);
+
+		if (clientIt != _clients.end())
+		{
+			std::size_t maxBodySize = listener.configs[0]->getClientMaxBodySize();
+
+			for (std::size_t i = 1; i < listener.configs.size(); ++i)
+			{
+				if (listener.configs[i]->getClientMaxBodySize() > maxBodySize)
+					maxBodySize = listener.configs[i]->getClientMaxBodySize();
+			}
+
+			clientIt->second.getRequest().setMaxBodySize(maxBodySize);
+		}
+
 		pollfd	client;
-		
+
 		client.fd = clientFd;
 		client.events = POLLIN;
 		client.revents = 0;
 
 		_fds.push_back(client);
-		_clients.insert(std::make_pair(clientFd, Client(clientFd)));
-		_clientConfigs[clientFd] = listener.config;
-		
-		//set max body
-		std::map<int, Client>::iterator	clientIt = _clients.find(clientFd);
-
-		if (clientIt != _clients.end())
-		{
-			std::size_t	maxBodySize = listener.config->getClientMaxBodySize();
-			clientIt->second.getRequest().setMaxBodySize(maxBodySize);
-		}
-	
-		// std::cout << "Client connected: " << clientFd << std::endl;
 	}
 }
 
@@ -317,7 +378,7 @@ void	Server::handleClientRead(Client& client)
 		return ;
 
 	try {
-		const ServerConfig	*config = getClientConfig(client.getFd());
+		const ServerConfig	*config = selectServerConfig(client.getFd(), request);
 
 		if (config == NULL)
 		{
@@ -325,6 +386,17 @@ void	Server::handleClientRead(Client& client)
 			return ;
 		}
 
+		_clientConfigs[client.getFd()] = config;
+
+		if (request.getBody().size() > config->getClientMaxBodySize())
+		{
+			HttpResponse response = buildErrorResponse(413);
+
+			client.appendToWriteBuffer(response.serialize());
+			enableClientWrite(client.getFd());
+			return ;
+		}
+		
 		const LocationConfig	*location = config->findLocation(request.getUri());
 
 		if (location != NULL && !location->getAllowedMethods().empty() && !location->isMethodAllowed(request.getMethod()))
@@ -488,6 +560,7 @@ void	Server::removeClient(int fd)
 	close(fd);
 	_clients.erase(fd);
 	_clientConfigs.erase(fd);
+	_clientListeners.erase(fd);
 
 	removePollFd(fd);
 }

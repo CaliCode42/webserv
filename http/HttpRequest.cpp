@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 22:09:59 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/27 16:30:54 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/28 17:32:05 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -124,7 +124,8 @@ bool HttpRequest::parseHeaders()
 			
 		std::string key = toLower(trim(line.substr(0, colon)));
 		std::string val = trim(line.substr(colon + 1)); // skip ":"
-		if (key == "content-length" && _headers.find(key) != _headers.end())
+		if ((key == "content-length" || key == "host")
+			&& _headers.find(key) != _headers.end())
 		{
 			setError(400);
 			return false;
@@ -137,9 +138,14 @@ bool HttpRequest::parseHeaders()
 //Transfer-Encoding: Chunked wins vs Content-length ^^
 void HttpRequest::onHeadersComplete()
 {
+	if (_version == "HTTP/1.1" && getHeader("Host").empty())
+	{
+		setError(400);
+		return ;
+	}
+	
 	//T-E CHUNKED
 	std::string transferEncoding = getHeader("Transfer-Encoding");
-	if (toLower(transferEncoding) == "chunked")
 	if (toLower(transferEncoding) == "chunked")
 	{
 		_headers.erase("content-length"); //delete fantom C-L
@@ -178,7 +184,7 @@ void HttpRequest::onHeadersComplete()
 		return;
 	}
 
-	if (_contentLength > _MAX_BODY_SIZE)
+	if (_contentLength > _maxBodySize)
 	{
 		setError(413);
 		return;
@@ -264,7 +270,7 @@ bool HttpRequest::parseChunkSize()
         return false;
     }
 
-	if (_body.size() > _MAX_BODY_SIZE || _chunkSize > _MAX_BODY_SIZE - _body.size())
+	if (_body.size() > _maxBodySize || _chunkSize > _maxBodySize - _body.size())
 	{
 		setError(413);
 		return false;
@@ -280,8 +286,7 @@ bool HttpRequest::parseChunkSize()
 bool HttpRequest::parseChunkData()
 {
 	// si body trop long, return false
-	if (_body.size() > _MAX_BODY_SIZE
-        || _chunkSize > _MAX_BODY_SIZE - _body.size())
+	if (_body.size() > _maxBodySize || _chunkSize > _maxBodySize - _body.size())
     {
         setError(413);
         return false;

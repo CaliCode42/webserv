@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:16:04 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/27 23:32:19 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/28 17:00:58 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,8 +33,9 @@
 
 struct ListeningSocket
 {
-	int					fd;
-	const ServerConfig	*config;
+	int									fd;
+	unsigned int						port;
+	std::vector<const ServerConfig*>	configs;
 };
 
 class Server
@@ -43,11 +44,11 @@ private:
 	std::vector<ServerConfig>						_configs;
 	std::vector<ListeningSocket>					_listeningSockets;
 
-
 	std::vector<pollfd>								_fds;
 	std::vector<int>								_clientsToRemove;
 	std::map<int, Client>							_clients;
 	std::map<int, const ServerConfig*>				_clientConfigs;
+	std::map<int, const ListeningSocket*>	_clientListeners;
 
 	std::map<int, CgiProcess*>						_cgiProcesses;
 	std::map<int, int>								_cgiStdinFds;
@@ -68,7 +69,10 @@ public:
 	int						createListeningSocket(unsigned int port);
 	void					initSockets();
 	const ListeningSocket	*findListeningSocket(int fd) const;
+	ListeningSocket			*findListeningSocketByPort(unsigned int port);
 
+	const ServerConfig		*selectServerConfig(int clientFd, const HttpRequest& request) const;
+	
 	const ServerConfig		*getClientConfig(int clientFd) const;
 	MethodHandler			*getClientHandler(int clientFd);
 

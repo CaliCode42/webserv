@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/23 15:14:34 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/27 22:27:37 by tcali            ###   ########.fr       */
+/*   Updated: 2026/08/28 16:11:38 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -233,7 +233,7 @@ ServerConfig ConfigParser::parseServer()
 	{
 		std::string directive = next();
 
-		if (directive == "listen" || directive == "root" || directive == "client_max_body_size")
+		if (directive == "listen" || directive == "root" || directive == "server_name" || directive == "client_max_body_size")
 		{
 			if (seenDirectives.find(directive) != seenDirectives.end())
 				throw std::runtime_error("ConfigParser: duplicate directive '" + directive + "' in server block");
@@ -255,6 +255,11 @@ ServerConfig ConfigParser::parseServer()
 		else if (directive == "root")
 		{
 			server.setRoot(next());
+			expect(";");
+		}
+		else if (directive == "server_name")
+		{
+			server.setServerName(next());
 			expect(";");
 		}
 		else if (directive == "client_max_body_size")
