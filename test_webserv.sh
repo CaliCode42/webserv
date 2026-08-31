@@ -216,19 +216,19 @@ fi
 print_title "${TEST_NUMBER}. GET PNG Content-Type"
 TEST_NUMBER=$((TEST_NUMBER + 1))
 
-headers="$(curl -sS -D - -o /dev/null "${BASE_URL}/images/private/Undead.png" 2>/dev/null)"
+headers="$(curl -sS -D - -o /dev/null "${BASE_URL}/private/Undead.png" 2>/dev/null)"
 status="$(printf "%s" "$headers" | head -n 1 | awk '{print $2}')"
 
 if [ "$status" = "200" ]; then
-    pass "GET /test.png returns 200"
+    pass "GET /Undead.png returns 200"
 else
-    fail "GET /test.png returns ${status} instead of 200"
+    fail "GET /Undead.png returns ${status} instead of 200"
 fi
 
 if printf "%s" "$headers" | grep -qi '^Content-Type: image/png'; then
-    pass "GET /test.png returns Content-Type: image/png"
+    pass "GET /Undead.png returns Content-Type: image/png"
 else
-    fail "GET /test.png does not return Content-Type: image/png"
+    fail "GET /Undead.png does not return Content-Type: image/png"
 fi
 
 

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   MethodHandler.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
+/*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/25 19:50:52 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/30 23:53:28 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/08/31 20:28:01 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -143,7 +143,7 @@ std::string MethodHandler::resolvePath(const std::string& uriPath, const Locatio
 
 	std::string root = location->getRoot();
 	
-	if (location->hasExplicitRoot())
+	if (!location->hasExplicitRoot())
 	{
 		//root inherit server : keep uri complete
 		if (!root.empty() && root[root.size() - 1] == '/' && !uriPath.empty() && uriPath[0]== '/')
