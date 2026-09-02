@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:16:04 by tcali             #+#    #+#             */
-/*   Updated: 2026/09/01 14:49:36 by tcali            ###   ########.fr       */
+/*   Updated: 2026/09/02 12:11:06 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,7 +62,7 @@ private:
 	static const std::time_t						_POLL_TIMEOUT = 1000;
 	static const std::time_t						_CGI_TIMEOUT = 5;
 
-	HttpResponse	buildErrorResponse(int statusCode);
+	HttpResponse	buildErrorResponse(int statusCode, const ServerConfig* config = NULL);
 
 public:
 	Server(const std::vector<ServerConfig>& configs);

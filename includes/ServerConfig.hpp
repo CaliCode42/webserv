@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/20 15:35:09 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/28 16:09:22 by tcali            ###   ########.fr       */
+/*   Updated: 2026/09/02 12:34:31 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -54,8 +54,6 @@ public:
 	void								addLocation(const LocationConfig& loc);
 
 	const LocationConfig*				findLocation(const std::string& uri) const;
-
-	// bool	matchesServerName(std::string host) const;
 };
 
 #endif

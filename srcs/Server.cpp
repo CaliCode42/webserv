@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:33:43 by tcali             #+#    #+#             */
-/*   Updated: 2026/09/01 15:40:59 by tcali            ###   ########.fr       */
+/*   Updated: 2026/09/02 12:33:10 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,22 +19,44 @@
 #include <cstring>
 #include <cerrno>
 #include <signal.h>
+#include <sys/stat.h>
+#include <fstream>
 
-// Temporary :
-// Just to test Error handling,
-// Later this must not be the responsibility of Server.
-HttpResponse	Server::buildErrorResponse(int statusCode)
+HttpResponse	Server::buildErrorResponse(int statusCode, const ServerConfig* config)
 {
 	HttpResponse response;
 
 	response.setStatus(statusCode);
-	response.setBody(
-		"<html><body><h1>" +
-		turnIntoString(statusCode) + " " +
-		HttpResponse::reasonPhrase(statusCode) +
-		"</h1></body></html>",
-		"text/html"
-	);
+	
+	if (config != NULL)
+	{
+		const std::map<int, std::string>&	errorPages = config->getErrorPages();
+
+		std::map<int, std::string>::const_iterator	it = errorPages.find(statusCode);
+
+		if (it != errorPages.end())
+		{
+			std::string	path = config->getRoot() + it->second;
+
+			struct stat	st;
+
+			if (stat(path.c_str(), &st) == 0 && !S_ISDIR(st.st_mode))
+			{
+				std::ifstream	file(path.c_str());
+
+				if (file.is_open())
+				{
+					std::ostringstream	ss;
+					ss << file.rdbuf();
+
+					response.setBody(ss.str(), "text/html");
+					return (response);
+				}
+			}
+		}
+	}
+
+	response.setBody("<h1>" + HttpResponse::reasonPhrase(statusCode) + "</h1>", "text/html");
 
 	return (response);
 }
@@ -407,7 +429,7 @@ void	Server::handleClientRead(Client& client)
 
 		if (request.getBody().size() > config->getClientMaxBodySize())
 		{
-			HttpResponse response = buildErrorResponse(413);
+			HttpResponse response = buildErrorResponse(413, config);
 
 			client.appendToWriteBuffer(response.serialize());
 			enableClientWrite(client.getFd());
@@ -418,7 +440,7 @@ void	Server::handleClientRead(Client& client)
 
 		if (location != NULL && !location->getAllowedMethods().empty() && !location->isMethodAllowed(request.getMethod()))
 		{
-			HttpResponse	response = buildErrorResponse(405);
+			HttpResponse	response = buildErrorResponse(405, config);
 
 			client.appendToWriteBuffer(response.serialize());
 			enableClientWrite(client.getFd());
@@ -429,7 +451,7 @@ void	Server::handleClientRead(Client& client)
 		{
 			if (!startCgiProcess(client, *location))
 			{
-				HttpResponse	response = buildErrorResponse(500);
+				HttpResponse	response = buildErrorResponse(500, config);
 
 				client.appendToWriteBuffer(response.serialize());
 				enableClientWrite(client.getFd());
@@ -442,7 +464,7 @@ void	Server::handleClientRead(Client& client)
 
 		if (location == NULL)
 		{
-			HttpResponse	response = buildErrorResponse(404);
+			HttpResponse	response = buildErrorResponse(404, config);
 
 			client.appendToWriteBuffer(response.serialize());
 			enableClientWrite(client.getFd());
@@ -464,15 +486,14 @@ void	Server::handleClientRead(Client& client)
 	}
 	catch (const std::exception& e)
 	{
-		// temporary, just to remove warnings
-		std::cerr << "HTTP processing failed for client "
-			  << client.getFd()
-			  << ": "
-			  << e.what()
-			  << std::endl;
+		std::cerr << "HTTP processing failed for client " << client.getFd()
+			<< ": " << e.what()<< std::endl;
 
-		// Build 400 or 500 http response
-		markClientForRemoval(client.getFd());
+		const ServerConfig*	config = getClientConfig(client.getFd());
+		HttpResponse	response = buildErrorResponse(500, config);
+
+		client.appendToWriteBuffer(response.serialize());
+		enableClientWrite(client.getFd());
 	}
 }
 
@@ -570,8 +591,6 @@ void Server::removeMarkedClients()
 
 void	Server::removeClient(int fd)
 {
-	// std::cout << "Client disconnected: " << fd << std::endl;
-
 	removeCgiProcess(fd);
 
 	close(fd);
@@ -623,7 +642,8 @@ void	Server::checkCgiProcesses()
 
 			if (clientIt != _clients.end())
 			{
-				HttpResponse	response = buildErrorResponse(500);
+				const ServerConfig	*config = getClientConfig(clientFd);
+				HttpResponse	response = buildErrorResponse(500, config);
 
 				clientIt->second.appendToWriteBuffer(response.serialize());
 				enableClientWrite(clientFd);
@@ -644,13 +664,15 @@ void	Server::checkCgiProcesses()
 			continue ;
 		}
 
+		const ServerConfig	*config = getClientConfig(clientFd);
+
 		HttpResponse	response;
 
 		if (!process->exitedNormally() || process->getExitStatus() != 0)
-			response = buildErrorResponse(500);
+			response = buildErrorResponse(500, config);
 
 		else if (!buildCgiResponse(process->getOutput(), response))
-			response = buildErrorResponse(500);
+			response = buildErrorResponse(500, config);
 
 		clientIt->second.appendToWriteBuffer(response.serialize());
 		enableClientWrite(clientFd);
