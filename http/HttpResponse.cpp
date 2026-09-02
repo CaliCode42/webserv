@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 23:52:39 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/27 17:10:35 by tcali            ###   ########.fr       */
+/*   Updated: 2026/09/01 12:34:04 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -68,6 +68,7 @@ std::string HttpResponse::reasonPhrase(int code)
 		case 414: return "URI Too Long";
 		case 500: return "Internal Server Error";
 		case 501: return "Not Implemented";
+		case 505: return "HTTP version Not Supported";
 		default:  return "Unknown";
 	}
 }

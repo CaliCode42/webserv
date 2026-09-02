@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:16:04 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/28 17:00:58 by tcali            ###   ########.fr       */
+/*   Updated: 2026/09/01 14:49:36 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,6 +22,7 @@
 #include <fcntl.h>
 #include <sstream>
 #include <cctype>
+#include <signal.h>
 
 #include "Client.hpp"
 #include "MethodHandler.hpp"
@@ -30,6 +31,7 @@
 #include "CgiProcess.hpp"
 #include "CgiHandler.hpp"
 
+extern sig_atomic_t g_running;
 
 struct ListeningSocket
 {

@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/23 15:14:34 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/31 19:38:40 by tcali            ###   ########.fr       */
+/*   Updated: 2026/09/01 12:14:28 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -192,13 +192,31 @@ LocationConfig ConfigParser::parseLocation(const std::string& serverRoot)
 		else if (directive == "autoindex")
 		{
 			std::string val = next();
-			loc.setAutoindex(val == "on");
+
+			if (val == "on")
+				loc.setAutoindex(true);
+			else if (val == "off")
+				loc.setAutoindex(false);
+			else
+				throw std::runtime_error(
+					"ConfigParser: invalid autoindex value: " + val
+				);
+				
 			expect(";");
 		}
 		else if (directive == "upload_enabled")
 		{
 			std::string val = next();
-			loc.setUploadEnabled(val == "on");
+
+			if (val == "on")
+				loc.setUploadEnabled(true);
+			else if (val == "off")
+				loc.setUploadEnabled(false);
+			else
+				throw std::runtime_error(
+					"ConfigParser: invalid upload_enabled value: " + val
+				);
+
 			expect(";");
 		}
 		else if (directive == "upload_path")

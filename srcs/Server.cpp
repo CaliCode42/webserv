@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:33:43 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/28 17:23:14 by tcali            ###   ########.fr       */
+/*   Updated: 2026/09/01 15:40:59 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -57,9 +57,26 @@ Server::~Server()
 			_handlers.begin(); it != _handlers.end(); ++it)
 		delete it->second;
 
+	_handlers.clear();
+
 	for (std::vector<pollfd>::iterator it = _fds.begin();
 		it != _fds.end(); ++it)
 		close(it->fd);
+
+	_clients.clear();
+
+	for (std::vector<ListeningSocket>::iterator it = _listeningSockets.begin();
+			it != _listeningSockets.end(); ++it)
+    {
+        if (it->fd >= 0)
+        {
+            close(it->fd);
+            it->fd = -1;
+        }
+    }
+
+    _listeningSockets.clear();
+    _fds.clear();
 }
 
 int	Server::createListeningSocket(unsigned int port)
@@ -223,7 +240,7 @@ void	Server::run()
 	if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
 		throw std::runtime_error("failed to ignore SIGPIPE");
 
-	while (true)
+	while (g_running)
 	{
 		int result = poll(&_fds[0], static_cast<nfds_t>(_fds.size()), _POLL_TIMEOUT);
 

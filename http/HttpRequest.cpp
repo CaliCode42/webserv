@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 22:09:59 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/28 17:32:05 by tcali            ###   ########.fr       */
+/*   Updated: 2026/09/01 12:39:31 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -81,6 +81,11 @@ bool HttpRequest::parseRequestLine()
 		setError(501); //Not Implemented
 		return false;
 	}
+	if (_version != "HTTP/1.1")
+	{
+		setError(505); // HTTP Version Not Supported
+		return false;
+	}
 	_state = STATE_HEADERS;
 	return true;
 }
@@ -146,15 +151,27 @@ void HttpRequest::onHeadersComplete()
 	
 	//T-E CHUNKED
 	std::string transferEncoding = getHeader("Transfer-Encoding");
-	if (toLower(transferEncoding) == "chunked")
+	
+	std::string contentLengthStr = getHeader("Content-Length");
+
+	if (!transferEncoding.empty() && ! contentLengthStr.empty())
 	{
-		_headers.erase("content-length"); //delete fantom C-L
+		setError(400);
+		return;
+	}
+
+	if (!transferEncoding.empty())
+	{
+		if (toLower(transferEncoding) != "chunked")
+		{
+			setError(501);
+			return;
+		}
 		_state = STATE_CHUNK_SIZE;
 		return;
 	}
 
 	//Content-Length
-	std::string contentLengthStr = getHeader("Content-Length");
 	if (contentLengthStr.empty())
 	{
 		_state = STATE_COMPLETE;
