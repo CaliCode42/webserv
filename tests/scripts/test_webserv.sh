@@ -30,6 +30,7 @@ mkdir -p "${TMP_DIR}"
 create_test_files() {
 	mkdir -p www/images
 	mkdir -p www/private
+	mkdir -p www/uploads
 
 	printf "location images root\n" > www/images/location_root_test.txt
 	printf "location private root\n" > www/private/private_root_test.txt
