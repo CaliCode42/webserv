@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
+/*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 23:53:01 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/24 09:06:15 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/09/02 15:43:42 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,7 +23,7 @@ public:
 	HttpResponse();
 	~HttpResponse();
 
-	void setStatus(int code);  // 201 ^^
+	void setStatus(int code);
 	void setBody(const std::string& body, const std::string& contentType);
 	void setHeader(const std::string& key, const std::string&  value);
 

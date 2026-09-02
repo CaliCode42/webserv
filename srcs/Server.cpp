@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:33:43 by tcali             #+#    #+#             */
-/*   Updated: 2026/09/02 12:33:10 by tcali            ###   ########.fr       */
+/*   Updated: 2026/09/02 15:47:12 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -67,14 +67,10 @@ Server::Server(const std::vector<ServerConfig>& configs): _configs(configs)
 	{
 		_handlers[&_configs[i]] = new MethodHandler(_configs[i]);
 	}
-
-	std::cout << "[Server] constructor called: server created" << std::endl;
 }
 
 Server::~Server()
 {
-	std::cout << "[Server] Destructor called" << std::endl;
-
 	for (std::map<const ServerConfig*, MethodHandler*>::iterator it =
 			_handlers.begin(); it != _handlers.end(); ++it)
 		delete it->second;

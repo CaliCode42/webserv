@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/25 19:50:52 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/31 20:28:01 by tcali            ###   ########.fr       */
+/*   Updated: 2026/09/02 15:44:01 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,7 +63,6 @@ HttpResponse MethodHandler::handle(const HttpRequest& req)
 	if (req.hasError())
 		return makeError(req.errorCode());
 		
-
 	//reuse cookies if it's valid or create a new one
 	std::map<std::string, std::string> cookies = req.getCookies();
 	std::map<std::string, std::string>::const_iterator cookieIt = cookies.find("session_id");

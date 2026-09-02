@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 22:09:53 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/28 17:10:29 by tcali            ###   ########.fr       */
+/*   Updated: 2026/09/02 15:43:04 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,7 +43,6 @@ public:
 	bool isComplete() const { return _state == STATE_COMPLETE; }
 	bool hasError() const { return _state == STATE_ERROR; }
 	int errorCode() const { return _errorCode; }
-	//bool parseRequestLine(const std::string& raw);
 
 	const std::string& getMethod()  const { return _method; } //GET
 	const std::string& getUri()     const { return _uri; } //index.html
