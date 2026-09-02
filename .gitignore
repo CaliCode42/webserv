@@ -1,17 +1,9 @@
 /obj
+obj/
 webserv
 ./vscode
 .vscode/
 .DS_Store
-test_incremental
-
-# fichiers de test generes automatiquement
-www/uploads/*
-!www/uploads/.gitkeep
-
-# residus de compilation
-obj/
-webserv
 
 # backups locaux
 *.bak
