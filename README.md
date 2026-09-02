@@ -219,9 +219,6 @@ The script handles the test lifecycle automatically:
 It is therefore not necessary to start `webserv` manually before running
 the test suite.
 
-Additional edge-case tests are available in
-`tests/scripts/edge_tests.sh`.
-
 Invalid configuration samples are available in `config_tests/`. They
 cover cases such as invalid ports, missing arguments, missing
 semicolons, unknown directives, invalid `autoindex` values, and unclosed
@@ -275,6 +272,12 @@ system interfaces involved in the project:
     the project, including `socket`, `bind`, `listen`, `accept`, `poll`,
     `recv`, `send`, `fcntl`, `fork`, `pipe`, `dup2`, `execve`, and
     `waitpid`.
+-    CGI documentation :
+     https://www.tutorialspoint.com/python/python_cgi_programming.htm
+     https://www.tutorialspoint.com/cplusplus/cpp_web_programming.htm
+-    Network Programming Documentation :
+     https://beej.us/guide/bgnet/
+     https://www.youtube.com/watch?v=jS9rBienEFQ
 
 ### Use of AI
 
