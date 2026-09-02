@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpRequest.hpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
+/*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 22:09:53 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/27 16:32:26 by tcali            ###   ########.fr       */
+/*   Updated: 2026/09/02 19:18:44 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,11 +39,9 @@ public:
 	
 	void appendData(const char* data, size_t len);
 
-	
 	bool isComplete() const { return _state == STATE_COMPLETE; }
 	bool hasError() const { return _state == STATE_ERROR; }
 	int errorCode() const { return _errorCode; }
-	//bool parseRequestLine(const std::string& raw);
 
 	const std::string& getMethod()  const { return _method; } //GET
 	const std::string& getUri()     const { return _uri; } //index.html
@@ -70,10 +68,8 @@ private:
 	std::string	_body;
 	
 	size_t _contentLength; // parsed when header are done;
-	size_t _chunkSize; //
-	//size_t _cookies;
+	size_t _chunkSize;
 	std::size_t _maxBodySize;
-	static const size_t	_MAX_BODY_SIZE = 1024 * 1024;
 
 	
 	void setError(int code);

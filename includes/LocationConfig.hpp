@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/16 15:29:36 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/31 00:17:43 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/09/02 14:04:19 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,7 +30,6 @@ private:
 	bool _uploadEnabled;
 	std::string _uploadPath;
 	std::map<std::string, std::string> _cgiExtensions; // extension -> path interpreter (ex: ".php" -> "/usr/bin/php-cgi")
-
 
 	bool _rootIsExplicit;
 

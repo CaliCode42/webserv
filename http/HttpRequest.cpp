@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpRequest.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
+/*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 22:09:59 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/27 16:30:54 by tcali            ###   ########.fr       */
+/*   Updated: 2026/09/02 18:24:10 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -140,7 +140,6 @@ void HttpRequest::onHeadersComplete()
 	//T-E CHUNKED
 	std::string transferEncoding = getHeader("Transfer-Encoding");
 	if (toLower(transferEncoding) == "chunked")
-	if (toLower(transferEncoding) == "chunked")
 	{
 		_headers.erase("content-length"); //delete fantom C-L
 		_state = STATE_CHUNK_SIZE;
@@ -178,7 +177,7 @@ void HttpRequest::onHeadersComplete()
 		return;
 	}
 
-	if (_contentLength > _MAX_BODY_SIZE)
+	if (_contentLength > _maxBodySize)
 	{
 		setError(413);
 		return;
@@ -264,7 +263,7 @@ bool HttpRequest::parseChunkSize()
         return false;
     }
 
-	if (_body.size() > _MAX_BODY_SIZE || _chunkSize > _MAX_BODY_SIZE - _body.size())
+	if (_body.size() > _maxBodySize || _chunkSize > _maxBodySize - _body.size())
 	{
 		setError(413);
 		return false;
@@ -280,8 +279,8 @@ bool HttpRequest::parseChunkSize()
 bool HttpRequest::parseChunkData()
 {
 	// si body trop long, return false
-	if (_body.size() > _MAX_BODY_SIZE
-        || _chunkSize > _MAX_BODY_SIZE - _body.size())
+	if (_body.size() > _maxBodySize
+        || _chunkSize > _maxBodySize - _body.size())
     {
         setError(413);
         return false;

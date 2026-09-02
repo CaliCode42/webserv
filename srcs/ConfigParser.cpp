@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/23 15:14:34 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/31 00:16:23 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/09/02 18:30:12 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -109,11 +109,11 @@ std::size_t ConfigParser::parseSize(const std::string& value)
 	{
 		digits = value.substr(0, value.size() - 1);
 		if (suffix == 'K')
-			multiplier = 1024;
+			multiplier = 1024UL;
 		else if (suffix == 'M')
-			multiplier = 1024 * 1024;
+			multiplier = 1024UL * 1024;
 		else
-			multiplier = 1024 * 1024 * 1024;
+			multiplier = 1024UL * 1024 * 1024;
 	}
 	
 	std::istringstream iss(digits);
@@ -225,6 +225,8 @@ ServerConfig ConfigParser::parseServer()
 {
 	ServerConfig server;
 	std::set<std::string> seenDirectives;
+	std::set<std::string> seenLocationPaths;
+
 
 	expect("{");
 
@@ -276,7 +278,13 @@ ServerConfig ConfigParser::parseServer()
 		}
 		else if (directive == "location")
 		{
-			server.addLocation(parseLocation(serverRoot));
+			LocationConfig loc = parseLocation(serverRoot);
+			if (seenLocationPaths.find(loc.getPath()) != seenLocationPaths.end())
+				throw std::runtime_error("ConfigParser: duplicate location \"" + loc.getPath() + "\" in server block");
+			
+			seenLocationPaths.insert(loc.getPath());
+			server.addLocation(loc);
+
 		}
 		else
 			throw std::runtime_error("ConfigParser: unknown directive in server: " + directive);

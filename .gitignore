@@ -15,3 +15,5 @@ webserv
 
 # backups locaux
 *.bak
+test_review_ste.sh
+test_webserv2.sh

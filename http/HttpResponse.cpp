@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
+/*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 23:52:39 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/27 17:10:35 by tcali            ###   ########.fr       */
+/*   Updated: 2026/09/02 19:17:22 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,6 +30,14 @@ void HttpResponse::setBody(const std::string& body, const std::string& contentTy
 
 void HttpResponse::setHeader(const std::string& key, const std::string&  value)
 {
+	for (size_t i = 0; i < _headers.size(); ++i)
+	{
+		if (_headers[i].first == key)
+		{
+			_headers[i].second = value;
+			return;
+		}
+	}
 	_headers.push_back(std::make_pair(key, value));
 }
 

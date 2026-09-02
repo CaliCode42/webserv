@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/25 19:50:52 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/30 23:53:28 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/09/02 18:36:08 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -105,6 +105,11 @@ HttpResponse MethodHandler::handle(const HttpRequest& req)
 	{
 		response = makeError(403);
 	}
+	else if (location != NULL && !location->getAllowedMethods().empty()
+			&& !location->isMethodAllowed(req.getMethod()))
+	{
+		response = makeError(405);
+	}
 	else if (location != NULL && location ->hasRedirect())
 	{
 		response.setStatus(301);
@@ -143,7 +148,7 @@ std::string MethodHandler::resolvePath(const std::string& uriPath, const Locatio
 
 	std::string root = location->getRoot();
 	
-	if (location->hasExplicitRoot())
+	if (!location->hasExplicitRoot())
 	{
 		//root inherit server : keep uri complete
 		if (!root.empty() && root[root.size() - 1] == '/' && !uriPath.empty() && uriPath[0]== '/')

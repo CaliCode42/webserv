@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ServerConfig.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
+/*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/20 15:40:51 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/27 17:07:33 by tcali            ###   ########.fr       */
+/*   Updated: 2026/09/02 14:04:03 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,12 +14,10 @@
 
 ServerConfig::ServerConfig(): _root("www"), _port(8080), _clientMaxBodySize(1 * 1024 * 1024)
 {
-	//std::cout << "[ServerConfig] Default constructor called" << std::endl;
 }
 
 ServerConfig::~ServerConfig()
 {
-	//std::cout << "[ServerConfig] Destructor called" << std::endl;
 }
 
 std::string ServerConfig::getRoot()const
