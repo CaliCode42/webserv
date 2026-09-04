@@ -298,6 +298,26 @@ processing failures. When a custom error page is configured for a status
 code, that page is used when available; otherwise, the server generates
 a default error response.
 
+## Team & Contributions
+
+This project was developed collaboratively by **tcali** and **sdossa**.
+While both contributors worked across the codebase during integration and debugging, the initial areas of responsibility were:
+
+### tcali
+- Server core and connection management
+- Non-blocking network I/O and `poll()` event loop
+- CGI execution and process integration (`fork`, `execve`, pipes)
+- Parts of the server configuration system
+- Integration, debugging and modifications across HTTP request/response handling
+
+### sdossa
+- HTTP request parsing and method handling
+- HTTP response handling
+- Cookies and session management
+- Parts of the configuration parsing and route configuration
+
+Both contributors worked on configuration handling, integration, testing and debugging throughout the project.
+
 ## Resources
 
 The following references were useful for understanding HTTP and the
