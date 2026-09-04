@@ -3,6 +3,46 @@ sdossa.*
 
 # Webserv
 
+HTTP/1.1 server implemented from scratch in C++98.
+
+Core challenges:
+- non-blocking network I/O with poll()
+- incremental HTTP request parsing
+- virtual server / route configuration
+- CGI lifecycle using fork, execve and pipes
+- partial socket reads/writes
+- resource and timeout management
+
+[Architecture Diagram]
+
+``` text
+                        ┌──────────────┐
+                        │ ConfigParser │
+                        └──────┬───────┘
+                               ↓
+Client ──TCP──> Listening socket
+                   │
+                   ↓
+             ┌──────────┐
+             │ poll()   │
+             └────┬─────┘
+                  ↓
+               Client
+                  ↓
+             HttpRequest
+                  ↓
+          ServerConfig /
+        Location selection
+             ↙        ↘
+    MethodHandler      CGI
+         ↓           fork/exec
+    HttpResponse       pipes
+             ↘        ↙
+                Client
+                  ↓
+                send()
+```
+
 ## Description
 
 Webserv is a C++98 HTTP/1.1 server developed as part of the 42
@@ -68,36 +108,6 @@ The main directories are:
 -   `tests/test_cgi/` --- CGI scripts used by the automated tests;
 -   `config_tests/` --- invalid configuration files used to test parser
     validation.
-
-## Project Architecture
-
-``` text
-                        ┌──────────────┐
-                        │ ConfigParser │
-                        └──────┬───────┘
-                               ↓
-Client ──TCP──> Listening socket
-                   │
-                   ↓
-             ┌──────────┐
-             │ poll()   │
-             └────┬─────┘
-                  ↓
-               Client
-                  ↓
-             HttpRequest
-                  ↓
-          ServerConfig /
-        Location selection
-             ↙        ↘
-    MethodHandler      CGI
-         ↓           fork/exec
-    HttpResponse       pipes
-             ↘        ↙
-                Client
-                  ↓
-                send()
-```
 
 ## Instructions
 
