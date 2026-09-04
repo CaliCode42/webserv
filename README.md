@@ -69,6 +69,36 @@ The main directories are:
 -   `config_tests/` --- invalid configuration files used to test parser
     validation.
 
+## Project Architecture
+
+``` text
+                        ┌──────────────┐
+                        │ ConfigParser │
+                        └──────┬───────┘
+                               ↓
+Client ──TCP──> Listening socket
+                   │
+                   ↓
+             ┌──────────┐
+             │ poll()   │
+             └────┬─────┘
+                  ↓
+               Client
+                  ↓
+             HttpRequest
+                  ↓
+          ServerConfig /
+        Location selection
+             ↙        ↘
+    MethodHandler      CGI
+         ↓           fork/exec
+    HttpResponse       pipes
+             ↘        ↙
+                Client
+                  ↓
+                send()
+```
+
 ## Instructions
 
 ### Requirements
@@ -281,18 +311,4 @@ system interfaces involved in the project:
 
 ### Use of AI
 
-AI was used as a development assistant during the project. Its use
-included:
-
--   debugging assistance and code review;
--   helping design and extend the automated test suite;
--   investigating HTTP and CGI edge cases;
--   reviewing the implementation against the project requirements;
--   helping identify potential error-handling and resource-management
-    issues;
--   assisting with documentation, including the structure and wording of
-    this README.
-
-AI-generated suggestions were reviewed before integration.
-Implementation decisions, testing, debugging, and responsibility for the
-final code remained with the project authors.
+AI tools were used for debugging, test design, edge-case investigation and documentation assistance. All integrated changes were reviewed and validated by the authors.
