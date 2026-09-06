@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/23 15:14:34 by sdossa            #+#    #+#             */
-/*   Updated: 2026/09/02 18:30:12 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/09/06 23:09:38 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,8 @@
 
 ConfigParser::ConfigParser() : _pos(0) {}
 
-ConfigParser::~ConfigParser() {}
+ConfigParser::~ConfigParser()
+{}
 
 std::string ConfigParser::readFile(const std::string& path)
 {
@@ -125,7 +126,6 @@ std::size_t ConfigParser::parseSize(const std::string& value)
 	return static_cast<std::size_t>(number) * multiplier;
 }
 
-
 std::string ConfigParser::peekServerRoot() const
 {
 	std::size_t pos = _pos;
@@ -186,19 +186,46 @@ LocationConfig ConfigParser::parseLocation(const std::string& serverRoot)
 		}
 		else if (directive == "redirect")
 		{
-			loc.setRedirect(next());
+			int code = 301;
+			std::string target = next();
+			std::istringstream codeCheck(target);
+			int maybeCode;
+			if ((codeCheck >> maybeCode) && codeCheck.eof() && maybeCode >= 300 && maybeCode < 400)
+			{
+				code = maybeCode;
+				target = next();
+			}
+			loc.setRedirect(target, code);
 			expect(";");
 		}
 		else if (directive == "autoindex")
 		{
 			std::string val = next();
-			loc.setAutoindex(val == "on");
+
+			if (val == "on")
+				loc.setAutoindex(true);
+			else if (val == "off")
+				loc.setAutoindex(false);
+			else
+				throw std::runtime_error(
+					"ConfigParser: invalid autoindex value: " + val
+				);
+				
 			expect(";");
 		}
 		else if (directive == "upload_enabled")
 		{
 			std::string val = next();
-			loc.setUploadEnabled(val == "on");
+
+			if (val == "on")
+				loc.setUploadEnabled(true);
+			else if (val == "off")
+				loc.setUploadEnabled(false);
+			else
+				throw std::runtime_error(
+					"ConfigParser: invalid upload_enabled value: " + val
+				);
+
 			expect(";");
 		}
 		else if (directive == "upload_path")
@@ -227,16 +254,14 @@ ServerConfig ConfigParser::parseServer()
 	std::set<std::string> seenDirectives;
 	std::set<std::string> seenLocationPaths;
 
-
 	expect("{");
-
 	std::string serverRoot = peekServerRoot();
 
 	while (peek() != "}")
 	{
 		std::string directive = next();
 
-		if (directive == "listen" || directive == "root" || directive == "client_max_body_size")
+		if (directive == "listen" || directive == "root" || directive == "server_name" || directive == "client_max_body_size")
 		{
 			if (seenDirectives.find(directive) != seenDirectives.end())
 				throw std::runtime_error("ConfigParser: duplicate directive '" + directive + "' in server block");
@@ -260,6 +285,11 @@ ServerConfig ConfigParser::parseServer()
 			server.setRoot(next());
 			expect(";");
 		}
+		else if (directive == "server_name")
+		{
+			server.setServerName(next());
+			expect(";");
+		}
 		else if (directive == "client_max_body_size")
 		{
 			server.setClientMaxBodySize(parseSize(next()));
@@ -281,10 +311,8 @@ ServerConfig ConfigParser::parseServer()
 			LocationConfig loc = parseLocation(serverRoot);
 			if (seenLocationPaths.find(loc.getPath()) != seenLocationPaths.end())
 				throw std::runtime_error("ConfigParser: duplicate location \"" + loc.getPath() + "\" in server block");
-			
 			seenLocationPaths.insert(loc.getPath());
 			server.addLocation(loc);
-
 		}
 		else
 			throw std::runtime_error("ConfigParser: unknown directive in server: " + directive);

@@ -6,19 +6,17 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/20 15:40:51 by tcali             #+#    #+#             */
-/*   Updated: 2026/09/02 14:04:03 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/09/07 00:56:55 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ServerConfig.hpp"
 
 ServerConfig::ServerConfig(): _root("www"), _port(8080), _clientMaxBodySize(1 * 1024 * 1024)
-{
-}
+{}
 
 ServerConfig::~ServerConfig()
-{
-}
+{}
 
 std::string ServerConfig::getRoot()const
 {
@@ -38,6 +36,16 @@ unsigned int ServerConfig::getPort() const
 void ServerConfig::setPort(unsigned int port)
 {
 	_port = port;
+}
+
+const std::string&	ServerConfig::getServerName() const
+{
+	return (_serverName);
+}
+
+void	ServerConfig::setServerName(const std::string& name)
+{
+	_serverName = name;
 }
 
 void ServerConfig::setClientMaxBodySize(std::size_t size)
@@ -80,10 +88,9 @@ const LocationConfig* ServerConfig::findLocation(const std::string& uri) const
 	{
 		const std::string& path = it->getPath();
 
-		// la location doit etre un prefixe de l'uri demandee
 		if (uri.compare(0, path.size(), path) != 0)
 			continue;
-
+		//prevent /uploads matching /uploadsecret
 		bool boundaryOk = (uri.size() == path.size())
 			|| (path[path.size() - 1] == '/')
 			|| (uri[path.size()] == '/');

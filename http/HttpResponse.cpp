@@ -6,13 +6,12 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 23:52:39 by sdossa            #+#    #+#             */
-/*   Updated: 2026/09/02 19:17:22 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/09/07 00:44:08 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "HttpResponse.hpp"
 #include <sstream>
-
 
 HttpResponse::HttpResponse() : _status(200)
 {}
@@ -20,7 +19,10 @@ HttpResponse::HttpResponse() : _status(200)
 HttpResponse::~HttpResponse()
 {}
 
-void HttpResponse::setStatus(int code) { _status = code; } 
+void HttpResponse::setStatus(int code)
+{
+	_status = code;
+} 
 
 void HttpResponse::setBody(const std::string& body, const std::string& contentType)
 {
@@ -30,6 +32,7 @@ void HttpResponse::setBody(const std::string& body, const std::string& contentTy
 
 void HttpResponse::setHeader(const std::string& key, const std::string&  value)
 {
+	//replace existing header intead of duplicating it
 	for (size_t i = 0; i < _headers.size(); ++i)
 	{
 		if (_headers[i].first == key)
@@ -40,7 +43,6 @@ void HttpResponse::setHeader(const std::string& key, const std::string&  value)
 	}
 	_headers.push_back(std::make_pair(key, value));
 }
-
 
 std::string HttpResponse::serialize() const
 {
@@ -72,10 +74,11 @@ std::string HttpResponse::reasonPhrase(int code)
 		case 403: return "Forbidden";
 		case 404: return "Not Found";
 		case 405: return "Method Not Allowed";
-		case 413: return "Payload too Large";
+		case 413: return "Payload Too Large";
 		case 414: return "URI Too Long";
 		case 500: return "Internal Server Error";
 		case 501: return "Not Implemented";
+		case 505: return "HTTP Version Not Supported";
 		default:  return "Unknown";
 	}
 }

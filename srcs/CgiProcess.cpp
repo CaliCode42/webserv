@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/18 18:50:48 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/24 19:48:40 by tcali            ###   ########.fr       */
+/*   Updated: 2026/09/02 12:33:07 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -126,11 +126,6 @@ bool	CgiProcess::start(const str& interpreter, const str& scriptPath,
 	if (_pid == 0)
 		handleChildProcess(interpreter, scriptPath, envp, stdinPipe, stdoutPipe);
 
-	// Parent only from here.
-	
-	// The child has its own copy of envp after fork(),
-	// so the parent can release its copy immediately.
-	
 	freeEnvp(envp);
 	envp = NULL;
 

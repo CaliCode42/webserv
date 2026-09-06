@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/25 19:50:52 by sdossa            #+#    #+#             */
-/*   Updated: 2026/09/02 18:36:08 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/09/06 22:43:36 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,8 +63,7 @@ HttpResponse MethodHandler::handle(const HttpRequest& req)
 	if (req.hasError())
 		return makeError(req.errorCode());
 		
-
-	//reuse cookies if it's valid or create a new one
+	//reuse cookies if valid or create a new one
 	std::map<std::string, std::string> cookies = req.getCookies();
 	std::map<std::string, std::string>::const_iterator cookieIt = cookies.find("session_id");
 	std::string sessionId;
@@ -78,7 +77,7 @@ HttpResponse MethodHandler::handle(const HttpRequest& req)
 		isNewSession =  true;
 	}
 
-	//set/get : count visits per session
+	//count visits per session
 	std::string visitCountStr = _sessions.get(sessionId, "visits");
 	int visitCount = visitCountStr.empty() ? 0 : std::atoi(visitCountStr.c_str());
 	visitCount++;
@@ -86,8 +85,7 @@ HttpResponse MethodHandler::handle(const HttpRequest& req)
 	visitOss << visitCount;
 	_sessions.set(sessionId, "visits", visitOss.str());
 	
-	
-	//decode before the 1st test anti path-traversal or "%2e%2e" pass through
+	//decode before anti path-traversal test or "%2e%2e" pass through
 	std::string decodedUri = decodeUrl(req.getUri());
 
 	//query string not part of the file path
@@ -97,7 +95,6 @@ HttpResponse MethodHandler::handle(const HttpRequest& req)
 		uriPath = uriPath.substr(0, qpos);
 	
 	const LocationConfig* location = _config.findLocation(uriPath);
-
 
 	HttpResponse response;
 
@@ -112,9 +109,13 @@ HttpResponse MethodHandler::handle(const HttpRequest& req)
 	}
 	else if (location != NULL && location ->hasRedirect())
 	{
-		response.setStatus(301);
+		int redirectCode = location->getRedirectCode();
+		response.setStatus(redirectCode);
 		response.setHeader("Location", location->getRedirect());
-		response.setBody("<h1>301 - Moved Permanently</h1>", "text/html");
+		
+		std::ostringstream bodyOss;
+		bodyOss << "<h1>" << redirectCode << " - " << HttpResponse::reasonPhrase(redirectCode) << "</h1>";
+		response.setBody(bodyOss.str(), "text/html");
 	}
 	else if (req.getMethod() == "GET")
 	{
@@ -150,17 +151,15 @@ std::string MethodHandler::resolvePath(const std::string& uriPath, const Locatio
 	
 	if (!location->hasExplicitRoot())
 	{
-		//root inherit server : keep uri complete
 		if (!root.empty() && root[root.size() - 1] == '/' && !uriPath.empty() && uriPath[0]== '/')
 			return root + uriPath.substr(1);
 		return root + uriPath;
 	}
 
-	//explicit root on this location : withdraw prefix
 	std::string locPath = location->getPath();
 	std::string relative = uriPath;
 	
-	//strip location prefix: /cgi/test.py under location /cgi -> /test.py
+	//strip location prefix: /cgi/test.py -> /test.py
 	if (uriPath.compare(0, locPath.size(), locPath) == 0)
 		relative = uriPath.substr(locPath.size());
 		
@@ -169,14 +168,12 @@ std::string MethodHandler::resolvePath(const std::string& uriPath, const Locatio
 	else if (relative[0] != '/')
 		relative = "/" + relative;
 
-	//avoid dbl slash when roo already ends with one
+	//avoid double slash
 	if (!root.empty() && root[root.size() - 1] == '/')
 		return root + relative.substr(1);
 
 	return root + relative;
-
 }
-
 
 std::string MethodHandler::buildAutoindex(const std::string& path, const std::string& uriPath) const
 {
@@ -205,7 +202,6 @@ std::string MethodHandler::buildAutoindex(const std::string& path, const std::st
 	html << "</ul><hr></body></html>";
 	return html.str();
 }
-
 
 std::string MethodHandler::decodeUrl(const std::string& uri)
 {
@@ -255,7 +251,7 @@ HttpResponse MethodHandler::handleGet(const std::string& path, const LocationCon
 			ss << file.rdbuf();
 				
 			HttpResponse res;
-			res.setStatus(200);// OK
+			res.setStatus(200);
 			res.setBody(ss.str(), contentTypeFor(indexPath));
 			return res;
 		}
@@ -266,7 +262,7 @@ HttpResponse MethodHandler::handleGet(const std::string& path, const LocationCon
 				return makeError(403);
 				
 			HttpResponse res;
-			res.setStatus(200);// OK
+			res.setStatus(200);
 			res.setBody(listing, "text/html");
 			return res;
 		}
@@ -278,10 +274,9 @@ HttpResponse MethodHandler::handleGet(const std::string& path, const LocationCon
 	ss << file.rdbuf();
 		
 	HttpResponse res;
-	res.setStatus(200);// OK
+	res.setStatus(200);
 	res.setBody(ss.str(), contentTypeFor(path));
 	return res;
-	
 }
 
 HttpResponse MethodHandler::handlePost(const HttpRequest& req, const std::string& uriPath,
@@ -303,8 +298,7 @@ HttpResponse MethodHandler::handlePost(const HttpRequest& req, const std::string
 	{
 		if (mkdir(uploadDir.c_str(), 0755) != 0)
 			return makeError(500);
-	}	
-
+	}
 	
 	std::string::size_type slashPos = uriPath.find_last_of('/');
 	std::string filename;
@@ -313,7 +307,7 @@ HttpResponse MethodHandler::handlePost(const HttpRequest& req, const std::string
 	
 	if (filename.empty())
 	{
-		//avoid silent ecrasing if 2 Posts w/t file names arrive at the same time
+		//avoid silent ecrasing if 2 file names arrive at the same time
 		static unsigned long uploadCounter = 0;
 		std::ostringstream oss;
 		oss << "upload_" << std::time(NULL) << "_" << uploadCounter++ << ".bin";
@@ -321,39 +315,31 @@ HttpResponse MethodHandler::handlePost(const HttpRequest& req, const std::string
 	}
 	uploadDir += filename;
 
-	//open the file
 	std::ofstream file(uploadDir.c_str(), std::ios::binary);
 	if (!file.is_open())
 		return makeError(500);
 	
-	//write body into the file
 	file << req.getBody();
 	file.close();
 
-	//send 201 Created
 	HttpResponse res;
 	res.setStatus(201);
 	res.setBody("<h1>201 - Created</h1>", "text/html");
 	return res;
-	
 }
 
 HttpResponse MethodHandler::handleDelete(const std::string& path)
 {
-	//check existing file
 	struct stat st;
 	if (stat(path.c_str(), &st) != 0)
 		return makeError(404);
 
-	//delete file
 	if (std::remove(path.c_str()) != 0)
 		return makeError(500);
 
-	//SUCCESS: 204 No Content
 	HttpResponse res;
 	res.setStatus(204);
 	return res;
-	
 }
 
 std::string MethodHandler::contentTypeFor(const std::string& path)
@@ -372,8 +358,8 @@ std::string MethodHandler::contentTypeFor(const std::string& path)
 	if (ext == ".txt")						return "text/plain";
 	if (ext == ".ico")						return "image/x-icon";
 	if (ext == ".pdf")						return "application/pdf";
+	if (ext == ".svg")						return "image/svg+xml";
+	if (ext == ".mp4")						return "video/mp4";
+	if (ext == ".mp3")						return "audio/mpeg";
 	return "application/octet-stream";
-
 }
-
-

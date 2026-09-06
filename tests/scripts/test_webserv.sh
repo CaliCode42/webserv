@@ -5,9 +5,13 @@ set -u
 HOST="${HOST:-localhost}"
 PORT="${PORT:-8080}"
 BASE_URL="http://${HOST}:${PORT}"
-BIGFILE_PATH="${BIGFILE_PATH:-www/bigfile.bin}"
+BIGFILE_PATH="${BIGFILE_PATH:-tests/bigfile.bin}"
 TMP_DIR=".webserv_test_tmp"
 CLIENT_TIMEOUT_VALUE=10
+SERVER_BIN="./webserv"
+SERVER_CONFIG="test.conf"
+SERVER_PID=""
+SERVER_LOG="${TMP_DIR}/webserv.log"
 
 GREEN="\033[0;32m"
 RED="\033[0;31m"
@@ -26,6 +30,7 @@ mkdir -p "${TMP_DIR}"
 create_test_files() {
 	mkdir -p www/images
 	mkdir -p www/private
+	mkdir -p www/uploads
 
 	printf "location images root\n" > www/images/location_root_test.txt
 	printf "location private root\n" > www/private/private_root_test.txt
@@ -33,7 +38,31 @@ create_test_files() {
 	printf "body { margin: 0; }\n" > www/style.css
 	printf "unknown content\n" > www/test.unknown
 
-	cat > www/index.html <<'EOF'
+	# Large static file used for transfer and concurrency tests.
+	mkdir -p tests
+
+	dd if=/dev/zero \
+    of="${BIGFILE_PATH}" \
+    bs=1048576 \
+    count=5 \
+    2>/dev/null
+
+	cp "${BIGFILE_PATH}" www/bigfile.bin
+
+	mkdir -p www/foo
+
+	printf "NO ROOT DEFINED" > www/foo/test.txt
+
+	# Install CGI test scripts temporarily in the CGI directory.
+	mkdir -p www/cgi-bin
+
+	for script in tests/test_cgi/*.py; do
+		if [ -f "$script" ]; then
+			cp "$script" www/cgi-bin/
+		fi
+	done
+
+	cat > www/test.html <<'EOF'
 <!DOCTYPE html>
 <html>
 <head>
@@ -77,14 +106,34 @@ EOF
 }
 
 cleanup_test_files() {
-	# rm www/index.html
+	rm www/test.html
 	rm www/style.css
 	rm www/test.unknown
 	rm -f www/images/location_root_test.txt
 	rm -f www/private/private_root_test.txt
+
+	rm -f "${BIGFILE_PATH}"
+	rm -f www/bigfile.bin
+
+	# Remove only temporary CGI test scripts.
+	for script in tests/test_cgi/*.py; do
+		if [ -f "$script" ]; then
+			rm -f "www/cgi-bin/$(basename "$script")"
+		fi
+	done
+
+	rm -f www/foo/test.txt
+	rm -rf www/foo
+
+	rm -f www/uploads/auto_create_upload.txt
+	rm -f www/uploads/body_limit.bin
+	rm -f www/uploads/case_chunked.txt
+	rm -f www/uploads/chunked_limit.bin
+	rm -f www/uploads/chunked_trailer.txt
 }
 
 cleanup() {
+	stop_server
 	cleanup_test_files
     rm -rf "${TMP_DIR}"
 }
@@ -120,6 +169,57 @@ server_is_up() {
     nc -z "$HOST" "$PORT" >/dev/null 2>&1
 }
 
+start_server() {
+    if server_is_up; then
+        printf "${RED}Error:${RESET} port %s is already in use.\n" "$PORT"
+        printf "Stop the existing server before running the tests.\n"
+        exit 1
+    fi
+
+    if [ ! -x "$SERVER_BIN" ]; then
+        printf "${YELLOW}webserv not found, building project...${RESET}\n"
+
+		if ! make; then
+			printf "${RED}Error:${RESET} compilation failed.\n"
+			exit 1
+		fi
+    fi
+
+    "$SERVER_BIN" "$SERVER_CONFIG" > "$SERVER_LOG" 2>&1 &
+    SERVER_PID=$!
+
+    i=0
+    while [ "$i" -lt 50 ]; do
+        if server_is_up; then
+            return 0
+        fi
+
+        if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+            printf "${RED}Error:${RESET} webserv stopped during startup.\n"
+            printf "\n--- webserv output ---\n"
+            cat "$SERVER_LOG"
+            exit 1
+        fi
+
+        sleep 0.1
+        i=$((i + 1))
+    done
+
+    printf "${RED}Error:${RESET} webserv did not start in time.\n"
+    printf "\n--- webserv output ---\n"
+    cat "$SERVER_LOG"
+    exit 1
+}
+
+stop_server() {
+    if [ -n "$SERVER_PID" ] && kill -0 "$SERVER_PID" 2>/dev/null; then
+        kill -INT "$SERVER_PID" 2>/dev/null || true
+        wait "$SERVER_PID" 2>/dev/null || true
+    fi
+
+    SERVER_PID=""
+}
+
 http_status() {
     curl -sS -o /dev/null -w "%{http_code}" "$1" 2>/dev/null
 }
@@ -138,31 +238,32 @@ require_cmd printf
 require_cmd cmp
 require_cmd wc
 
+create_test_files
+
+start_server
+
 if server_is_up; then
-    pass "Server is responding on ${HOST}:${PORT}"
+    pass "Server started succesfully on ${HOST}:${PORT}"
 else
-    fail "No server detected on ${HOST}:${PORT}"
-    printf "\nStart ./webserv before running this script.\n"
+    fail "Server failed to start on ${HOST}:${PORT}"
     exit 1
 fi
 
-create_test_files
+print_title "${TEST_NUMBER}. GET with no root defined in location"
+TEST_NUMBER=$((TEST_NUMBER + 1))
 
-# print_title "${TEST_NUMBER}. GET with no root defined in location"
-# TEST_NUMBER=$((TEST_NUMBER + 1))
+status="$(http_status "${BASE_URL}/foo/test.txt")"
 
-# status="$(http_status "${BASE_URL}/foo/test.txt")"
-
-# if [ "$status" = "200" ]; then
-#     pass "GET /foo/test.txt returns 200"
-# else
-#     fail "GET /foo/test.txt returns ${status} instead of 200"
-# fi
+if [ "$status" = "200" ]; then
+    pass "GET /foo/test.txt returns 200"
+else
+    fail "GET /foo/test.txt returns ${status} instead of 200"
+fi
 
 print_title "${TEST_NUMBER}. Simple GET"
 TEST_NUMBER=$((TEST_NUMBER + 1))
 
-status="$(http_status "${BASE_URL}/index.html")"
+status="$(http_status "${BASE_URL}/test.html")"
 
 if [ "$status" = "200" ]; then
     pass "GET / returns 200"
@@ -173,12 +274,12 @@ fi
 print_title "${TEST_NUMBER}. GET existing HTML file"
 TEST_NUMBER=$((TEST_NUMBER + 1))
 
-status="$(http_status "${BASE_URL}/index.html")"
+status="$(http_status "${BASE_URL}/test.html")"
 
 if [ "$status" = "200" ]; then
-    pass "GET /index.html returns 200"
+    pass "GET /test.html returns 200"
 else
-    fail "GET /index.html returns ${status} instead of 200"
+    fail "GET /test.html returns ${status} instead of 200"
 fi
 
 
@@ -216,19 +317,19 @@ fi
 print_title "${TEST_NUMBER}. GET PNG Content-Type"
 TEST_NUMBER=$((TEST_NUMBER + 1))
 
-headers="$(curl -sS -D - -o /dev/null "${BASE_URL}/images/private/Undead.png" 2>/dev/null)"
+headers="$(curl -sS -D - -o /dev/null "${BASE_URL}/private/Undead.png" 2>/dev/null)"
 status="$(printf "%s" "$headers" | head -n 1 | awk '{print $2}')"
 
 if [ "$status" = "200" ]; then
-    pass "GET /test.png returns 200"
+    pass "GET /Undead.png returns 200"
 else
-    fail "GET /test.png returns ${status} instead of 200"
+    fail "GET /Undead.png returns ${status} instead of 200"
 fi
 
 if printf "%s" "$headers" | grep -qi '^Content-Type: image/png'; then
-    pass "GET /test.png returns Content-Type: image/png"
+    pass "GET /Undead.png returns Content-Type: image/png"
 else
-    fail "GET /test.png does not return Content-Type: image/png"
+    fail "GET /Undead.png does not return Content-Type: image/png"
 fi
 
 
@@ -465,7 +566,7 @@ success_count=0
 i=1
 
 while [ "$i" -le 10 ]; do
-    code="$(http_status "${BASE_URL}/index.html")"
+    code="$(http_status "${BASE_URL}/test.html")"
     if [ "$code" = "200" ]; then
         success_count=$((success_count + 1))
     fi
@@ -557,7 +658,7 @@ while [ "$i" -le "$TOTAL_REQUESTS" ]; do
         --max-time 2 \
         -o /dev/null \
         -w "%{http_code}" \
-        "${BASE_URL}/index.html" 2>/dev/null)"
+        "${BASE_URL}/test.html" 2>/dev/null)"
 
     if [ "$code" = "200" ]; then
         success_count=$((success_count + 1))
@@ -588,7 +689,7 @@ while [ "$i" -le "$CONCURRENT_CLIENTS" ]; do
             --max-time 5 \
             -o /dev/null \
             -w "%{http_code}" \
-            "${BASE_URL}/index.html" \
+            "${BASE_URL}/test.html" \
             > "$output" 2>/dev/null
     ) &
 
@@ -1096,7 +1197,7 @@ TEST_NUMBER=$((TEST_NUMBER + 1))
 INCOMPLETE_OUTPUT="${TMP_DIR}/incomplete_timeout.txt"
 
 {
-    printf 'GET /index.html HTTP/1.1\r\n'
+    printf 'GET /test.html HTTP/1.1\r\n'
     printf 'Host: %s\r\n' "$HOST"
     # no final CRLF: request intentionally incomplete
     sleep $((CLIENT_TIMEOUT_VALUE + 2))
@@ -1115,7 +1216,7 @@ TEST_NUMBER=$((TEST_NUMBER + 1))
 SLOW_CLIENT_OUTPUT="${TMP_DIR}/slow_client_timeout.txt"
 
 {
-    printf 'GET /index.html HTTP/1.1\r\n'
+    printf 'GET /test.html HTTP/1.1\r\n'
     printf 'Host: %s\r\n' "$HOST"
     sleep $((CLIENT_TIMEOUT_VALUE + 2))
 } | timeout 14 nc "$HOST" "$PORT" > "${SLOW_CLIENT_OUTPUT}" 2>/dev/null &
@@ -1124,7 +1225,7 @@ slow_pid=$!
 
 sleep 1
 
-status="$(http_status "${BASE_URL}/index.html")"
+status="$(http_status "${BASE_URL}/test.html")"
 
 if [ "$status" = "200" ]; then
     pass "Server serves other clients while one client is inactive"
@@ -1141,7 +1242,7 @@ TEST_NUMBER=$((TEST_NUMBER + 1))
 ACTIVE_OUTPUT="${TMP_DIR}/active_timeout.txt"
 
 {
-    printf 'GET /index.html HTTP/1.1\r\n'
+    printf 'GET /test.html HTTP/1.1\r\n'
     sleep $(((CLIENT_TIMEOUT_VALUE + 2) / 2))
     printf 'Host: %s\r\n' "$HOST"
     sleep $(((CLIENT_TIMEOUT_VALUE + 2) / 2))
@@ -1187,7 +1288,7 @@ TEST_NUMBER=$((TEST_NUMBER + 1))
 
 if exec 3<>/dev/tcp/"$HOST"/"$PORT"; then
 
-    printf 'GET /index.html HTTP/1.1\r\n' >&3
+    printf 'GET /test.html HTTP/1.1\r\n' >&3
     printf 'Host: %s\r\n' "$HOST" >&3
 
     if IFS= read -r -t $((CLIENT_TIMEOUT_VALUE + 2)) -u 3 _; then
@@ -1220,7 +1321,7 @@ idle_pid=$!
 
 i=0
 while [ "$i" -lt 12 ]; do
-    status="$(http_status "${BASE_URL}/index.html")"
+    status="$(http_status "${BASE_URL}/test.html")"
 
     if [ "$status" != "200" ]; then
         fail "Concurrent GET returned ${status} during idle timeout test"
@@ -1251,7 +1352,7 @@ idle_pid=$!
 
 i=0
 while [ "$i" -lt 12 ]; do
-    status="$(http_status "${BASE_URL}/index.html")"
+    status="$(http_status "${BASE_URL}/test.html")"
 
     if [ "$status" != "200" ]; then
         fail "Concurrent GET returned ${status} during idle timeout test"
@@ -1278,7 +1379,7 @@ TEST_NUMBER=$((TEST_NUMBER + 1))
 ACTIVE_OUTPUT="${TMP_DIR}/active_timeout_reset.txt"
 
 {
-    printf 'GET /index.html HTTP/1.1\r\n'
+    printf 'GET /test.html HTTP/1.1\r\n'
 
     sleep 9
 
@@ -1609,7 +1710,7 @@ fi
 print_title "${TEST_NUMBER}. Server alive after CGI tests"
 TEST_NUMBER=$((TEST_NUMBER + 1))
 
-if [ "$(http_status "${BASE_URL}/index.html")" = "200" ]; then
+if [ "$(http_status "${BASE_URL}/test.html")" = "200" ]; then
 	pass "Server remains fully functional after CGI tests"
 else
 	fail "Server no longer serves normal requests after CGI tests"
@@ -1676,13 +1777,13 @@ printf "${YELLOW}SKIP:${RESET} %d\n" "$SKIP"
 
 if [ "$FAIL" -eq 0 ]; then
     printf "\n${GREEN}All applicable tests passed.\n"
-	sed -n '/<body>/,/<\/body>/p' www/index.html \
+	sed -n '/<body>/,/<\/body>/p' www/test.html \
 		| sed 's/<[^>]*>//g'
 	printf "${RESET}"
     exit 0
 else
     printf "\n${RED}%d test(s) failed.\n" "$FAIL"
-	sed -n '/<body>/,/<\/body>/p' www/index.html \
+	sed -n '/<body>/,/<\/body>/p' www/test.html \
 			| sed 's/<[^>]*>//g'
 	printf "${RESET}"
     exit 1

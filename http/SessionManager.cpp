@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/12 16:37:14 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/24 09:11:43 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/09/06 23:00:49 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,9 +15,7 @@
 #include <sstream>
 
 SessionManager::SessionManager(long ttlSeconds) : _ttl(ttlSeconds)
-{
-	std::srand(static_cast<unsigned int>(std::time(0)));
-}
+{}
 
 SessionManager::~SessionManager()
 {}
@@ -25,7 +23,7 @@ SessionManager::~SessionManager()
 std::string SessionManager::create()
 {
 	std::string sid = generateId();
-	while (_sessions.find(sid) != _sessions.end())//avoid collisions
+	while (_sessions.find(sid) != _sessions.end()) //avoid collisions
 		sid = generateId();
 	_sessions[sid].lastSeen = std::time(0);
 	return sid;
@@ -40,7 +38,7 @@ bool SessionManager::exists(const std::string& sid)
 		return false;
 
 	std::time_t now = std::time(0);
-	if (now - sessionIt->second.lastSeen > _ttl) // expired = forget it
+	if (now - sessionIt->second.lastSeen > _ttl)
 	{
 		_sessions.erase(sessionIt);
 		return false;

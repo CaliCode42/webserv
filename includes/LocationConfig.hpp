@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/16 15:29:36 by sdossa            #+#    #+#             */
-/*   Updated: 2026/09/02 14:04:19 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/09/06 23:07:57 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,11 +26,11 @@ private:
 	std::string _index;
 	std::vector<std::string> _allowedMethods;
 	bool _autoindex;
+	int _redirectCode;
 	std::string _redirect;
 	bool _uploadEnabled;
 	std::string _uploadPath;
-	std::map<std::string, std::string> _cgiExtensions; // extension -> path interpreter (ex: ".php" -> "/usr/bin/php-cgi")
-
+	std::map<std::string, std::string> _cgiExtensions;
 	bool _rootIsExplicit;
 
 public:
@@ -54,7 +54,8 @@ public:
 	void setAutoindex(bool value);
 
 	std::string getRedirect() const;
-	void setRedirect(const std::string& target);
+	int getRedirectCode() const;
+	void setRedirect(const std::string& target, int code);
 	bool hasRedirect() const;
 
 	bool getUploadEnabled() const;
@@ -66,15 +67,10 @@ public:
 	const std::map<std::string, std::string>& getCgiExtensions() const;
 	void addCgiExtension(const std::string& ext, const std::string& interpreterPath);
 	bool isCgiExtension(const std::string& ext) const;
-	std::string getCgiInterpreter(const std::string& ext) const;
-
-	
 	std::string getCgiPath(const std::string& extension) const;
 
 	bool hasExplicitRoot() const;
 	void setRootExplicit(bool value);
-
-
 };
 
 #endif

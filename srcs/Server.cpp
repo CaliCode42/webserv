@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:33:43 by tcali             #+#    #+#             */
-/*   Updated: 2026/08/27 23:37:22 by tcali            ###   ########.fr       */
+/*   Updated: 2026/09/02 15:47:12 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,22 +19,44 @@
 #include <cstring>
 #include <cerrno>
 #include <signal.h>
+#include <sys/stat.h>
+#include <fstream>
 
-// Temporary :
-// Just to test Error handling,
-// Later this must not be the responsibility of Server.
-HttpResponse	Server::buildErrorResponse(int statusCode)
+HttpResponse	Server::buildErrorResponse(int statusCode, const ServerConfig* config)
 {
 	HttpResponse response;
 
 	response.setStatus(statusCode);
-	response.setBody(
-		"<html><body><h1>" +
-		turnIntoString(statusCode) + " " +
-		HttpResponse::reasonPhrase(statusCode) +
-		"</h1></body></html>",
-		"text/html"
-	);
+	
+	if (config != NULL)
+	{
+		const std::map<int, std::string>&	errorPages = config->getErrorPages();
+
+		std::map<int, std::string>::const_iterator	it = errorPages.find(statusCode);
+
+		if (it != errorPages.end())
+		{
+			std::string	path = config->getRoot() + it->second;
+
+			struct stat	st;
+
+			if (stat(path.c_str(), &st) == 0 && !S_ISDIR(st.st_mode))
+			{
+				std::ifstream	file(path.c_str());
+
+				if (file.is_open())
+				{
+					std::ostringstream	ss;
+					ss << file.rdbuf();
+
+					response.setBody(ss.str(), "text/html");
+					return (response);
+				}
+			}
+		}
+	}
+
+	response.setBody("<h1>" + HttpResponse::reasonPhrase(statusCode) + "</h1>", "text/html");
 
 	return (response);
 }
@@ -45,27 +67,40 @@ Server::Server(const std::vector<ServerConfig>& configs): _configs(configs)
 	{
 		_handlers[&_configs[i]] = new MethodHandler(_configs[i]);
 	}
-
-	std::cout << "[Server] constructor called: server created" << std::endl;
 }
 
 Server::~Server()
 {
-	std::cout << "[Server] Destructor called" << std::endl;
-
 	for (std::map<const ServerConfig*, MethodHandler*>::iterator it =
 			_handlers.begin(); it != _handlers.end(); ++it)
 		delete it->second;
 
+	_handlers.clear();
+
 	for (std::vector<pollfd>::iterator it = _fds.begin();
 		it != _fds.end(); ++it)
 		close(it->fd);
+
+	_clients.clear();
+
+	for (std::vector<ListeningSocket>::iterator it = _listeningSockets.begin();
+			it != _listeningSockets.end(); ++it)
+    {
+        if (it->fd >= 0)
+        {
+            close(it->fd);
+            it->fd = -1;
+        }
+    }
+
+    _listeningSockets.clear();
+    _fds.clear();
 }
 
 int	Server::createListeningSocket(unsigned int port)
 {
 	int	serverSocket = socket(AF_INET, SOCK_STREAM, 0);
-	if (serverSocket == -1)
+	if (serverSocket < 0 )
 		throw std::runtime_error("failed to init socket.");
 
 	sockaddr_in	addr;
@@ -110,14 +145,23 @@ void	Server::initSockets()
 {	
 	for (std::size_t i = 0; i < _configs.size(); ++i)
 	{
+		ListeningSocket	*listener = findListeningSocketByPort(_configs[i].getPort());
+
+		if (listener != NULL)
+		{
+			listener->configs.push_back(&_configs[i]);
+			continue ;
+		}
+		
 		int	fd = createListeningSocket(_configs[i].getPort());
 
-		ListeningSocket	listener;
+		ListeningSocket	newListener;
 
-		listener.fd = fd;
-		listener.config = &_configs[i];
+		newListener.fd = fd;
+		newListener.port = _configs[i].getPort();
+		newListener.configs.push_back(&_configs[i]);
 
-		_listeningSockets.push_back(listener);
+		_listeningSockets.push_back(newListener);
 
 		pollfd	pfd;
 
@@ -129,7 +173,8 @@ void	Server::initSockets()
 	}
 }
 
-const ListeningSocket	*Server::findListeningSocket(int fd) const
+
+const ListeningSocket *Server::findListeningSocket(int fd) const
 {
 	for (std::size_t i = 0; i < _listeningSockets.size(); ++i)
 	{
@@ -138,6 +183,47 @@ const ListeningSocket	*Server::findListeningSocket(int fd) const
 	}
 
 	return (NULL);
+}
+
+ListeningSocket	*Server::findListeningSocketByPort(unsigned int port)
+{
+	for (std::size_t i = 0; i < _listeningSockets.size(); ++i)
+	{
+		if (_listeningSockets[i].port == port)
+			return (&_listeningSockets[i]);
+	}
+
+	return (NULL);
+}
+
+const ServerConfig	*Server::selectServerConfig(
+	int clientFd,
+	const HttpRequest& request) const
+{
+	std::map<int, const ListeningSocket*>::const_iterator	it =
+		_clientListeners.find(clientFd);
+
+	if (it == _clientListeners.end() || it->second == NULL)
+		return (NULL);
+
+	const ListeningSocket	*listener = it->second;
+
+	if (listener->configs.empty())
+		return (NULL);
+
+	std::string	host = request.getHeader("Host");
+
+	std::size_t	colon = host.find(':');
+	if (colon != std::string::npos)
+		host = host.substr(0, colon);
+
+	for (std::size_t i = 0; i < listener->configs.size(); ++i)
+	{
+		if (listener->configs[i]->getServerName() == host)
+			return (listener->configs[i]);
+	}
+
+	return (listener->configs[0]);
 }
 
 const ServerConfig	*Server::getClientConfig(int clientFd) const
@@ -172,7 +258,7 @@ void	Server::run()
 	if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
 		throw std::runtime_error("failed to ignore SIGPIPE");
 
-	while (true)
+	while (g_running)
 	{
 		int result = poll(&_fds[0], static_cast<nfds_t>(_fds.size()), _POLL_TIMEOUT);
 
@@ -248,9 +334,12 @@ void	Server::run()
 
 void	Server::acceptClient(const ListeningSocket& listener)
 {
+	if (listener.configs.empty())
+		return ;
+
 	while (true)
 	{
-		int clientFd = accept(listener.fd, NULL, NULL);
+		int	clientFd = accept(listener.fd, NULL, NULL);
 
 		if (clientFd < 0)
 			return ;
@@ -260,27 +349,34 @@ void	Server::acceptClient(const ListeningSocket& listener)
 			close(clientFd);
 			continue ;
 		}
-		
+
+		_clients.insert(std::make_pair(clientFd, Client(clientFd)));
+
+		_clientConfigs[clientFd] = listener.configs[0];
+		_clientListeners[clientFd] = &listener;
+
+		std::map<int, Client>::iterator clientIt = _clients.find(clientFd);
+
+		if (clientIt != _clients.end())
+		{
+			std::size_t maxBodySize = listener.configs[0]->getClientMaxBodySize();
+
+			for (std::size_t i = 1; i < listener.configs.size(); ++i)
+			{
+				if (listener.configs[i]->getClientMaxBodySize() > maxBodySize)
+					maxBodySize = listener.configs[i]->getClientMaxBodySize();
+			}
+
+			clientIt->second.getRequest().setMaxBodySize(maxBodySize);
+		}
+
 		pollfd	client;
-		
+
 		client.fd = clientFd;
 		client.events = POLLIN;
 		client.revents = 0;
 
 		_fds.push_back(client);
-		_clients.insert(std::make_pair(clientFd, Client(clientFd)));
-		_clientConfigs[clientFd] = listener.config;
-		
-		//set max body
-		std::map<int, Client>::iterator	clientIt = _clients.find(clientFd);
-
-		if (clientIt != _clients.end())
-		{
-			std::size_t	maxBodySize = listener.config->getClientMaxBodySize();
-			clientIt->second.getRequest().setMaxBodySize(maxBodySize);
-		}
-	
-		// std::cout << "Client connected: " << clientFd << std::endl;
 	}
 }
 
@@ -317,7 +413,7 @@ void	Server::handleClientRead(Client& client)
 		return ;
 
 	try {
-		const ServerConfig	*config = getClientConfig(client.getFd());
+		const ServerConfig	*config = selectServerConfig(client.getFd(), request);
 
 		if (config == NULL)
 		{
@@ -325,11 +421,22 @@ void	Server::handleClientRead(Client& client)
 			return ;
 		}
 
+		_clientConfigs[client.getFd()] = config;
+
+		if (request.getBody().size() > config->getClientMaxBodySize())
+		{
+			HttpResponse response = buildErrorResponse(413, config);
+
+			client.appendToWriteBuffer(response.serialize());
+			enableClientWrite(client.getFd());
+			return ;
+		}
+		
 		const LocationConfig	*location = config->findLocation(request.getUri());
 
 		if (location != NULL && !location->getAllowedMethods().empty() && !location->isMethodAllowed(request.getMethod()))
 		{
-			HttpResponse	response = buildErrorResponse(405);
+			HttpResponse	response = buildErrorResponse(405, config);
 
 			client.appendToWriteBuffer(response.serialize());
 			enableClientWrite(client.getFd());
@@ -340,7 +447,7 @@ void	Server::handleClientRead(Client& client)
 		{
 			if (!startCgiProcess(client, *location))
 			{
-				HttpResponse	response = buildErrorResponse(500);
+				HttpResponse	response = buildErrorResponse(500, config);
 
 				client.appendToWriteBuffer(response.serialize());
 				enableClientWrite(client.getFd());
@@ -353,7 +460,7 @@ void	Server::handleClientRead(Client& client)
 
 		if (location == NULL)
 		{
-			HttpResponse	response = buildErrorResponse(404);
+			HttpResponse	response = buildErrorResponse(404, config);
 
 			client.appendToWriteBuffer(response.serialize());
 			enableClientWrite(client.getFd());
@@ -375,15 +482,14 @@ void	Server::handleClientRead(Client& client)
 	}
 	catch (const std::exception& e)
 	{
-		// temporary, just to remove warnings
-		std::cerr << "HTTP processing failed for client "
-			  << client.getFd()
-			  << ": "
-			  << e.what()
-			  << std::endl;
+		std::cerr << "HTTP processing failed for client " << client.getFd()
+			<< ": " << e.what()<< std::endl;
 
-		// Build 400 or 500 http response
-		markClientForRemoval(client.getFd());
+		const ServerConfig*	config = getClientConfig(client.getFd());
+		HttpResponse	response = buildErrorResponse(500, config);
+
+		client.appendToWriteBuffer(response.serialize());
+		enableClientWrite(client.getFd());
 	}
 }
 
@@ -481,13 +587,12 @@ void Server::removeMarkedClients()
 
 void	Server::removeClient(int fd)
 {
-	// std::cout << "Client disconnected: " << fd << std::endl;
-
 	removeCgiProcess(fd);
 
 	close(fd);
 	_clients.erase(fd);
 	_clientConfigs.erase(fd);
+	_clientListeners.erase(fd);
 
 	removePollFd(fd);
 }
@@ -533,7 +638,8 @@ void	Server::checkCgiProcesses()
 
 			if (clientIt != _clients.end())
 			{
-				HttpResponse	response = buildErrorResponse(500);
+				const ServerConfig	*config = getClientConfig(clientFd);
+				HttpResponse	response = buildErrorResponse(500, config);
 
 				clientIt->second.appendToWriteBuffer(response.serialize());
 				enableClientWrite(clientFd);
@@ -554,13 +660,15 @@ void	Server::checkCgiProcesses()
 			continue ;
 		}
 
+		const ServerConfig	*config = getClientConfig(clientFd);
+
 		HttpResponse	response;
 
 		if (!process->exitedNormally() || process->getExitStatus() != 0)
-			response = buildErrorResponse(500);
+			response = buildErrorResponse(500, config);
 
 		else if (!buildCgiResponse(process->getOutput(), response))
-			response = buildErrorResponse(500);
+			response = buildErrorResponse(500, config);
 
 		clientIt->second.appendToWriteBuffer(response.serialize());
 		enableClientWrite(clientFd);

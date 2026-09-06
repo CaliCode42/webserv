@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/16 15:29:03 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/31 00:06:22 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/09/06 23:11:15 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,13 +15,10 @@
 LocationConfig::LocationConfig()
 	: _path(""), _root("www"), _index("index.html"), _autoindex(false),
 	  _redirect(""), _uploadEnabled(false), _uploadPath(""), _rootIsExplicit(false)
-{
-}
-
+{}
 
 LocationConfig::~LocationConfig()
-{
-}
+{}
 
 std::string LocationConfig::getPath() const
 {
@@ -43,7 +40,6 @@ void LocationConfig::setRoot(const std::string& root)
 	_root = root;
 }
 
-
 bool LocationConfig::hasExplicitRoot() const
 {
 	return (_rootIsExplicit);
@@ -53,7 +49,6 @@ void LocationConfig::setRootExplicit(bool value)
 {
 	_rootIsExplicit = value;
 }
-
 
 std::string LocationConfig::getIndex() const
 {
@@ -101,9 +96,15 @@ std::string LocationConfig::getRedirect() const
 	return (_redirect);
 }
 
-void LocationConfig::setRedirect(const std::string& target)
+void LocationConfig::setRedirect(const std::string& target, int code)
 {
 	_redirect = target;
+	_redirectCode = code;
+}
+
+int LocationConfig::getRedirectCode() const
+{
+	return _redirectCode;
 }
 
 bool LocationConfig::hasRedirect() const
@@ -146,15 +147,10 @@ bool LocationConfig::isCgiExtension(const std::string& ext) const
 	return (_cgiExtensions.find(ext) != _cgiExtensions.end());
 }
 
-std::string LocationConfig::getCgiInterpreter(const std::string& ext) const
+std::string LocationConfig::getCgiPath(const std::string& extension) const
 {
-	std::map<std::string, std::string>::const_iterator cgiIt = _cgiExtensions.find(ext);
+	std::map<std::string, std::string>::const_iterator cgiIt = _cgiExtensions.find(extension);
 	if (cgiIt == _cgiExtensions.end())
 		return "";
 	return cgiIt->second;
-}
-
-std::string LocationConfig::getCgiPath(const std::string& extension) const
-{
-	return getCgiInterpreter(extension);
 }

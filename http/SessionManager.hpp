@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/12 16:37:09 by sdossa            #+#    #+#             */
-/*   Updated: 2026/08/24 09:11:07 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/09/06 23:01:51 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,20 +18,16 @@
 #include <ctime>
 #include <cstdlib>
 
-
 class SessionManager 
 {
 public:
 	explicit SessionManager(long ttlSeconds = 3600);
 	~SessionManager();
 
-	std::string create();// create sesion, returns id for future cookie value
-	
+	std::string create();
 	bool exists(const std::string& sid);//expires stale sessions
 
-	//Pre-session key/value store
-	void		set(const std::string& sid, const std::string& key,
-				const std::string& value);
+	void set(const std::string& sid, const std::string& key, const std::string& value);
 	std::string get(const std::string& sid, const std::string& key);
 	
 	void destroy(const std::string& sid);
@@ -44,7 +40,7 @@ private:
 	};
 	
 	std::map<std::string, Session>	_sessions;
-	long							_ttl; //time before expiration
+	long							_ttl;
 	
 	static std::string generateId();
 };
