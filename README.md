@@ -264,6 +264,13 @@ cover cases such as invalid ports, missing arguments, missing
 semicolons, unknown directives, invalid `autoindex` values, and unclosed
 blocks.
 
+Two additional scripts for local development checks (memory leak, and load):
+
+``` bash
+./tests/scripts/memory_test.sh
+./tests/scripts/load_test.sh
+```
+
 ## Technical Choices
 
 ### Non-blocking I/O
@@ -315,6 +322,7 @@ While both contributors worked across the codebase during integration and debugg
 - HTTP response handling
 - Cookies and session management
 - Parts of the configuration parsing and route configuration
+- Integration and regression debugging (merge conflict, config-inheritance, header-handling, redirect status code, extended content-type support).
 
 Both contributors worked on configuration handling, integration, testing and debugging throughout the project.
 
@@ -328,16 +336,28 @@ system interfaces involved in the project:
 -   RFC 9110 --- HTTP Semantics:
     https://datatracker.ietf.org/doc/html/rfc9110
 -   RFC 9112 --- HTTP/1.1: https://datatracker.ietf.org/doc/html/rfc9112
+-   RFC 6265 --- HTTP State Management Mechanism (cookies): 
+    https://datatracker.ietf.org/doc/html/rfc6265
+-   MDN Web Docs --- Set-Cookie header: 
+    https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie
+-   MDN Web Docs --- Transfer-Encoding: 
+    https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Transfer-Encoding
+-   MDN Web Docs --- HTTP response status codes: 
+    https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
+-   nginx documentation: 
+    https://nginx.org/en/docs/
+-   cppreference.com --- C++98 standard library reference: 
+    https://en.cppreference.com/
 -   Linux manual pages (`man`) for system calls and interfaces used by
     the project, including `socket`, `bind`, `listen`, `accept`, `poll`,
     `recv`, `send`, `fcntl`, `fork`, `pipe`, `dup2`, `execve`, and
     `waitpid`.
--    CGI documentation :
-     https://www.tutorialspoint.com/python/python_cgi_programming.htm
-     https://www.tutorialspoint.com/cplusplus/cpp_web_programming.htm
--    Network Programming Documentation :
-     https://beej.us/guide/bgnet/
-     https://www.youtube.com/watch?v=jS9rBienEFQ
+-   CGI documentation :
+    https://www.tutorialspoint.com/python/python_cgi_programming.htm
+    https://www.tutorialspoint.com/cplusplus/cpp_web_programming.htm
+-   Network Programming Documentation :
+    https://beej.us/guide/bgnet/
+    https://www.youtube.com/watch?v=jS9rBienEFQ
 
 ### Use of AI
 
