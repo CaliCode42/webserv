@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 23:52:39 by sdossa            #+#    #+#             */
-/*   Updated: 2026/09/07 00:44:08 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/09/18 10:42:29 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -76,6 +76,7 @@ std::string HttpResponse::reasonPhrase(int code)
 		case 405: return "Method Not Allowed";
 		case 413: return "Payload Too Large";
 		case 414: return "URI Too Long";
+		case 431: return "Request Header Fields Too Large";
 		case 500: return "Internal Server Error";
 		case 501: return "Not Implemented";
 		case 505: return "HTTP Version Not Supported";

@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 22:09:59 by sdossa            #+#    #+#             */
-/*   Updated: 2026/09/07 00:30:11 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/09/18 10:50:14 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -60,6 +60,12 @@ bool HttpRequest::parseRequestLine()
 	{
 		if (_buffer.size() > 8192)
 			setError(414);
+		return false;
+	}
+
+	if (eol > 8192)
+	{
+		setError(414);
 		return false;
 	}
 		
