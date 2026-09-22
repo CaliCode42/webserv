@@ -2,7 +2,7 @@
 
 import time
 
-time.sleep(5)
+time.sleep(1)
 
 print("Content-Type: text/plain")
 print()
