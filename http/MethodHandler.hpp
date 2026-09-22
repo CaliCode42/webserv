@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/25 19:51:12 by sdossa            #+#    #+#             */
-/*   Updated: 2026/09/06 23:06:37 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/09/22 12:44:46 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,6 +42,7 @@ private:
 	
 	static std::string decodeUrl(const std::string& uri);
 	static std::string contentTypeFor(const std::string& path);
+	static std::string buildStyledPage(int code, const std::string& title, const std::string& desc, const std::string& colorHex);
 	
 	HttpResponse makeError(int code);
 };

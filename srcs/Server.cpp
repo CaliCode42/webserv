@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
+/*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:33:43 by tcali             #+#    #+#             */
-/*   Updated: 2026/09/02 15:47:12 by tcali            ###   ########.fr       */
+/*   Updated: 2026/09/22 11:32:30 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -401,8 +401,8 @@ void	Server::handleClientRead(Client& client)
 	if (request.hasError())
 	{
 		int	statusCode = request.errorCode();
-
-		HttpResponse	response = buildErrorResponse(statusCode);
+		const ServerConfig* config = getClientConfig(client.getFd());
+		HttpResponse	response = buildErrorResponse(statusCode, config);
 
 		client.appendToWriteBuffer(response.serialize());
 		enableClientWrite(client.getFd());

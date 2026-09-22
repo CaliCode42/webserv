@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 22:09:59 by sdossa            #+#    #+#             */
-/*   Updated: 2026/09/18 10:50:14 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/09/22 12:25:01 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -129,6 +129,12 @@ bool HttpRequest::parseHeaders()
 			setError(400);
 			return false;
 		}
+		
+		if (line[colon - 1] == ' ' || line[colon - 1] == '\t')
+		{
+			setError(400);
+			return false;
+		}
 			
 		std::string key = toLower(trim(line.substr(0, colon)));
 		std::string val = trim(line.substr(colon + 1));
@@ -172,9 +178,15 @@ void HttpRequest::onHeadersComplete()
 	}
 
 	//Content-Length
-	if (contentLengthStr.empty())
+	bool hasContentLength = _headers.find("content-length") != _headers.end();
+	if(!hasContentLength)
 	{
 		_state = STATE_COMPLETE;
+		return;
+	}
+	if (contentLengthStr.empty())
+	{
+		setError(400);
 		return;
 	}
 

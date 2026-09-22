@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 23:52:39 by sdossa            #+#    #+#             */
-/*   Updated: 2026/09/18 10:42:29 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/09/22 10:22:11 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -50,7 +50,7 @@ std::string HttpResponse::serialize() const
 
 	out << "HTTP/1.1 " << _status << " " << reasonPhrase(_status) << "\r\n";
 	out << "Content-Length: " << _body.size() << "\r\n";
-	out << "Server: webserv/1.0\r\n";
+	out << "Server: webserv/1.1\r\n";
 
 	for (size_t i = 0; i < _headers.size(); ++i)
 		out << _headers[i].first << ": " << _headers[i].second << "\r\n";

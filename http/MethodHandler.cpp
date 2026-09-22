@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/25 19:50:52 by sdossa            #+#    #+#             */
-/*   Updated: 2026/09/06 22:43:36 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/09/22 13:31:40 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -54,8 +54,75 @@ HttpResponse MethodHandler::makeError(int code)
 			}
 		}
 	}
-	res.setBody("<h1>" + HttpResponse::reasonPhrase(code) + "</h1>", "text/html");
+	std::ostringstream body;
+	body << "<!DOCTYPE html><html><head><title>" << code << " "
+		<< HttpResponse::reasonPhrase(code) << "</title></head>"
+		<< "<body><h1>" << code << " " << HttpResponse::reasonPhrase(code) << "</h1>"
+		<< "<p>webserv/1.1</p></body></html>";	
+	res.setBody(body.str(), "text/html");
 	return res;
+}
+
+std::string MethodHandler::buildStyledPage(int code, const std::string& title, const std::string& desc, const std::string& colorHex)
+{
+	std::ostringstream html;
+	html << "<!DOCTYPE html>\n"
+		<< "<html lang=\"fr\">\n"
+		<< "<head>\n"
+		<< "<meta charset=\"UTF-8\">\n"
+		<< "<title>" << code << " " << HttpResponse::reasonPhrase(code) << "</title>\n"
+		<< "<style>\n"
+		<< "  body {\n"
+		<< "    margin: 0;\n"
+		<< "    height: 100vh;\n"
+		<< "    display: flex;\n"
+		<< "    align-items: center;\n"
+		<< "    justify-content: center;\n"
+		<< "    background: #1a1d23;\n"
+		<< "    color: #e8e8e8;\n"
+		<< "    font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Helvetica, Arial, sans-serif;\n"
+		<< "  }\n"
+		<< "  .card {\n"
+		<< "    text-align: center;\n"
+		<< "    padding: 48px 56px;\n"
+		<< "    border: 1px solid #2e323b;\n"
+		<< "    border-radius: 12px;\n"
+		<< "    background: #21252d;\n"
+		<< "  }\n"
+		<< "  .code {\n"
+		<< "    font-size: 88px;\n"
+		<< "    font-weight: 700;\n"
+		<< "    margin: 0;\n"
+		<< "    color: " << colorHex << ";\n"
+		<< "    letter-spacing: 2px;\n"
+		<< "  }\n"
+		<< "  .title {\n"
+		<< "    font-size: 20px;\n"
+		<< "    font-weight: 600;\n"
+		<< "    margin: 12px 0 8px;\n"
+		<< "  }\n"
+		<< "  .desc {\n"
+		<< "    font-size: 14px;\n"
+		<< "    color: #9aa0ab;\n"
+		<< "    margin: 0;\n"
+		<< "  }\n"
+		<< "  .foot {\n"
+		<< "    margin-top: 28px;\n"
+		<< "    font-size: 12px;\n"
+		<< "    color: #545a66;\n"
+		<< "  }\n"
+		<< "</style>\n"
+		<< "</head>\n"
+		<< "<body>\n"
+		<< "  <div class=\"card\">\n"
+		<< "    <p class=\"code\">" << code << "</p>\n"
+		<< "    <p class=\"title\">" << title << "</p>\n"
+		<< "    <p class=\"desc\">" << desc << "</p>\n"
+		<< "    <p class=\"foot\">webserv/1.1</p>\n"
+		<< "  </div>\n"
+		<< "</body>\n"
+		<< "</html>\n";
+	return html.str();
 }
 
 HttpResponse MethodHandler::handle(const HttpRequest& req)
@@ -112,10 +179,14 @@ HttpResponse MethodHandler::handle(const HttpRequest& req)
 		int redirectCode = location->getRedirectCode();
 		response.setStatus(redirectCode);
 		response.setHeader("Location", location->getRedirect());
+		//a checker
+		response.setBody(buildStyledPage(redirectCode, HttpResponse::reasonPhrase(redirectCode),
+			"Cette ressource a été déplacée vers une nouvelle adresse.", "#5aa9e6"), "text/html");		
+
 		
 		std::ostringstream bodyOss;
-		bodyOss << "<h1>" << redirectCode << " - " << HttpResponse::reasonPhrase(redirectCode) << "</h1>";
-		response.setBody(bodyOss.str(), "text/html");
+		//bodyOss << "<h1>" << redirectCode << " - " << HttpResponse::reasonPhrase(redirectCode) << "</h1>";
+		//response.setBody(bodyOss.str(), "text/html");
 	}
 	else if (req.getMethod() == "GET")
 	{
@@ -324,7 +395,8 @@ HttpResponse MethodHandler::handlePost(const HttpRequest& req, const std::string
 
 	HttpResponse res;
 	res.setStatus(201);
-	res.setBody("<h1>201 - Created</h1>", "text/html");
+	res.setBody(buildStyledPage(201, "Ressource créée", "Le fichier a été enregistré avec succès.", "#4caf50"), "text/html");
+	//res.setBody("<h1>201 - Created</h1>", "text/html");
 	return res;
 }
 
