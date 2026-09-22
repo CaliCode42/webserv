@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   MethodHandler.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
+/*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/25 19:50:52 by sdossa            #+#    #+#             */
-/*   Updated: 2026/09/06 22:43:36 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/09/22 11:21:51 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -246,7 +246,10 @@ HttpResponse MethodHandler::handleGet(const std::string& path, const LocationCon
 		struct stat indexSt;
 		if (!indexName.empty() && stat(indexPath.c_str(), &indexSt) == 0 && !S_ISDIR(indexSt.st_mode))
 		{
-			std::ifstream file(indexPath.c_str());
+			std::ifstream file(indexPath.c_str(), std::ios::binary);
+			if (!file.is_open())
+				return (makeError(403));
+
 			std::ostringstream ss;
 			ss << file.rdbuf();
 				
@@ -269,7 +272,10 @@ HttpResponse MethodHandler::handleGet(const std::string& path, const LocationCon
 		return makeError(403);
 	}	
 	
-	std::ifstream file(path.c_str());
+	std::ifstream file(path.c_str(), std::ios::binary);
+	if (!file.is_open())
+		return (makeError(403));
+
 	std::ostringstream ss;
 	ss << file.rdbuf();
 		
@@ -317,7 +323,7 @@ HttpResponse MethodHandler::handlePost(const HttpRequest& req, const std::string
 
 	std::ofstream file(uploadDir.c_str(), std::ios::binary);
 	if (!file.is_open())
-		return makeError(500);
+		return makeError(403);
 	
 	file << req.getBody();
 	file.close();
@@ -335,7 +341,7 @@ HttpResponse MethodHandler::handleDelete(const std::string& path)
 		return makeError(404);
 
 	if (std::remove(path.c_str()) != 0)
-		return makeError(500);
+		return makeError(403);
 
 	HttpResponse res;
 	res.setStatus(204);
