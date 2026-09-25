@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 23:52:39 by sdossa            #+#    #+#             */
-/*   Updated: 2026/09/22 10:22:11 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/09/23 15:32:13 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -74,6 +74,7 @@ std::string HttpResponse::reasonPhrase(int code)
 		case 403: return "Forbidden";
 		case 404: return "Not Found";
 		case 405: return "Method Not Allowed";
+		case 409: return "Conflict";
 		case 413: return "Payload Too Large";
 		case 414: return "URI Too Long";
 		case 431: return "Request Header Fields Too Large";

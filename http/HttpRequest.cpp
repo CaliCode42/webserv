@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 22:09:59 by sdossa            #+#    #+#             */
-/*   Updated: 2026/09/22 12:25:01 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/09/23 17:03:11 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -190,7 +190,7 @@ void HttpRequest::onHeadersComplete()
 		return;
 	}
 
-	if (contentLengthStr[0] == '-')
+	if (contentLengthStr[0] == '-' || contentLengthStr[0] == '+')
 	{
 		setError(400);
 		return;

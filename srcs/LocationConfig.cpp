@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/16 15:29:03 by sdossa            #+#    #+#             */
-/*   Updated: 2026/09/06 23:11:15 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/09/25 08:34:20 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 
 LocationConfig::LocationConfig()
 	: _path(""), _root("www"), _index("index.html"), _autoindex(false),
-	  _redirect(""), _uploadEnabled(false), _uploadPath(""), _rootIsExplicit(false)
+	   _redirectCode(301), _redirect(""), _uploadEnabled(false), _uploadPath(""), _rootIsExplicit(false)
 {}
 
 LocationConfig::~LocationConfig()

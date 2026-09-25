@@ -6,7 +6,7 @@
 /*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/25 19:50:52 by sdossa            #+#    #+#             */
-/*   Updated: 2026/09/22 14:06:32 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/09/25 08:42:18 by sdossa           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,12 +23,39 @@
 #include <fstream>
 #include <cstdio>
 #include <cerrno>
+#ifndef PATH_MAX
+# define PATH_MAX 4096
+#endif
+
 
 MethodHandler::MethodHandler(const ServerConfig& config) : _config(config), _sessions(1800)
 {}
 
 MethodHandler::~MethodHandler()
 {}
+
+//RE
+bool MethodHandler::isWithinRoot(const std::string& resolvedPath, const std::string& root) const
+{
+	char realResolved[PATH_MAX];
+	char realRoot[PATH_MAX];
+
+	if (realpath(resolvedPath.c_str(), realResolved) == NULL)
+		return false;
+	if (realpath(root.c_str(), realRoot) == NULL)
+		return false;
+
+	std::string resolvedStr(realResolved);
+	std::string rootStr(realRoot);
+
+	if (resolvedStr == rootStr)
+		return true;
+	if (resolvedStr.compare(0, rootStr.size(), rootStr) == 0
+		&& resolvedStr.size() > rootStr.size()
+		&& resolvedStr[rootStr.size()] == '/')
+		return true;
+	return false;
+}
 
 HttpResponse MethodHandler::makeError(int code)
 {
@@ -54,65 +81,17 @@ HttpResponse MethodHandler::makeError(int code)
 			}
 		}
 	}
-	std::ostringstream body;
-	body << "<!DOCTYPE html><html><head><title>" << code << " "
-		<< HttpResponse::reasonPhrase(code) << "</title></head>"
-		<< "<body><h1>" << code << " " << HttpResponse::reasonPhrase(code) << "</h1>"
-		<< "<p>webserv/1.1</p></body></html>";	
-	res.setBody(body.str(), "text/html");
+	res.setBody(buildStyledPage(code, HttpResponse::reasonPhrase(code), "Une erreur est survenue."), "text/html");
 	return res;
 }
 
-std::string MethodHandler::buildStyledPage(int code, const std::string& title, const std::string& desc, const std::string& colorHex)
+std::string MethodHandler::buildStyledPage(int code, const std::string& title, const std::string& desc)
 {
 	std::ostringstream html;
 	html << "<!DOCTYPE html>\n"
 		<< "<html lang=\"fr\">\n"
-		<< "<head>\n"
 		<< "<meta charset=\"UTF-8\">\n"
 		<< "<title>" << code << " " << HttpResponse::reasonPhrase(code) << "</title>\n"
-		<< "<style>\n"
-		<< "  body {\n"
-		<< "    margin: 0;\n"
-		<< "    height: 100vh;\n"
-		<< "    display: flex;\n"
-		<< "    align-items: center;\n"
-		<< "    justify-content: center;\n"
-		<< "    background: #1a1d23;\n"
-		<< "    color: #e8e8e8;\n"
-		<< "    font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Helvetica, Arial, sans-serif;\n"
-		<< "  }\n"
-		<< "  .card {\n"
-		<< "    text-align: center;\n"
-		<< "    padding: 48px 56px;\n"
-		<< "    border: 1px solid #2e323b;\n"
-		<< "    border-radius: 12px;\n"
-		<< "    background: #21252d;\n"
-		<< "  }\n"
-		<< "  .code {\n"
-		<< "    font-size: 88px;\n"
-		<< "    font-weight: 700;\n"
-		<< "    margin: 0;\n"
-		<< "    color: " << colorHex << ";\n"
-		<< "    letter-spacing: 2px;\n"
-		<< "  }\n"
-		<< "  .title {\n"
-		<< "    font-size: 20px;\n"
-		<< "    font-weight: 600;\n"
-		<< "    margin: 12px 0 8px;\n"
-		<< "  }\n"
-		<< "  .desc {\n"
-		<< "    font-size: 14px;\n"
-		<< "    color: #9aa0ab;\n"
-		<< "    margin: 0;\n"
-		<< "  }\n"
-		<< "  .foot {\n"
-		<< "    margin-top: 28px;\n"
-		<< "    font-size: 12px;\n"
-		<< "    color: #545a66;\n"
-		<< "  }\n"
-		<< "</style>\n"
-		<< "</head>\n"
 		<< "<body>\n"
 		<< "  <div class=\"card\">\n"
 		<< "    <p class=\"code\">" << code << "</p>\n"
@@ -152,6 +131,12 @@ HttpResponse MethodHandler::handle(const HttpRequest& req)
 	visitOss << visitCount;
 	_sessions.set(sessionId, "visits", visitOss.str());
 	
+	// to comment during siege if necessary
+	const std::map<std::string, std::string>& headers = req.getHeaders();
+	for (std::map<std::string, std::string>::const_iterator it = headers.begin(); it != headers.end(); ++it)
+		std::cout << it->first << ": " << it->second << std::endl;
+
+	
 	//decode before anti path-traversal test or "%2e%2e" pass through
 	std::string decodedUri = decodeUrl(req.getUri());
 
@@ -179,14 +164,8 @@ HttpResponse MethodHandler::handle(const HttpRequest& req)
 		int redirectCode = location->getRedirectCode();
 		response.setStatus(redirectCode);
 		response.setHeader("Location", location->getRedirect());
-		//a checker
-		response.setBody(buildStyledPage(redirectCode, HttpResponse::reasonPhrase(redirectCode),
-			"Cette ressource a été déplacée vers une nouvelle adresse.", "#5aa9e6"), "text/html");		
-
-		
-		std::ostringstream bodyOss;
-		//bodyOss << "<h1>" << redirectCode << " - " << HttpResponse::reasonPhrase(redirectCode) << "</h1>";
-		//response.setBody(bodyOss.str(), "text/html");
+		response.setBody(buildStyledPage(redirectCode, HttpResponse::reasonPhrase(redirectCode), 
+		"Cette ressource a été déplacée vers une nouvelle adresse."), "text/html");
 	}
 	else if (req.getMethod() == "GET")
 	{
@@ -198,7 +177,7 @@ HttpResponse MethodHandler::handle(const HttpRequest& req)
 	}
 	else if (req.getMethod() == "DELETE")
 	{
-		response = handleDelete(resolvePath(uriPath, location));
+		response = handleDelete(resolvePath(uriPath, location), location);
 	}
 	else
 	{
@@ -246,31 +225,69 @@ std::string MethodHandler::resolvePath(const std::string& uriPath, const Locatio
 	return root + relative;
 }
 
+std::string MethodHandler::htmlEscape(const std::string& str)
+{
+	std::string result;
+	result.reserve(str.size());
+	
+	for (std::string::size_type i = 0; i < str.size(); ++i)
+	{
+		switch (str[i])
+		{
+		case '&': result += "&amp;";
+			break;
+		case '<': result += "&alt;";
+			break;
+		case '>': result += "&gt;";
+			break;
+		case '"': result += "&quot;";
+			break;
+		case '\'': result += "&#39;";
+			break;
+		default: result += str[i];
+			break;
+		}
+	}
+	return result;
+}
+
 std::string MethodHandler::buildAutoindex(const std::string& path, const std::string& uriPath) const
 {
 	DIR* dir = opendir(path.c_str());
 	if (dir == NULL)
 		return "";
 	
-	std::ostringstream html;
-	html << "<html><head><title>Index of " << uriPath << "</title></head><body>";
-	html << "<h1>Index of " << uriPath << "</h1><hr><ul>";
-
 	std::string base = uriPath;
 	if (base.empty() || base[base.size() - 1] != '/')
 		base += "/";
 	
+	std::ostringstream list;
 	struct  dirent* entry;
 	while ((entry = readdir(dir)) != NULL)
 	{
 		std::string name = entry->d_name;
 		if (name == ".")
 			continue;
-		html << "<li><a href=\"" << base << name << "\">" << name << "</a></li>";
+		list << "<li><a href=\"" << htmlEscape(base) << htmlEscape(name) << "\">" << htmlEscape(name) << "</a></li>\n";
 	}
-	
 	closedir(dir);
-	html << "</ul><hr></body></html>";
+
+	std::ostringstream html;
+	html << "<!DOCTYPE html>\n"
+		<< "<html lang=\"fr\">\n"
+		<< "<meta charset=\"UTF-8\">\n"
+		<< "<title>Index of " << htmlEscape(uriPath) << "</title>\n"
+		<< "<body>\n"
+		<< "<div class=\"card\">\n"
+		<< "<p class=\"code\">Index</p>\n"
+		<< "<p class=\"title\">Index of " << htmlEscape(uriPath) << "</p>\n"
+		<< "<ul class=\"listing\">\n"
+		<< list.str()
+		<< "</ul>\n"
+		<< "<p class=\"foot\">webserv/1.1</p>\n"
+		<< "</div>\n"
+		<< "</body>\n"
+		<< "</html>\n";
 	return html.str();
 }
 
@@ -303,6 +320,10 @@ HttpResponse MethodHandler::handleGet(const std::string& path, const LocationCon
 	struct stat st;
 	if (stat(path.c_str(), &st) != 0)
 		return makeError(404);
+
+	std::string root = (location != NULL) ? location->getRoot() : _config.getRoot();
+	if (!isWithinRoot(path, root))
+		return makeError(403);
 	
 	if (S_ISDIR(st.st_mode))
 	{
@@ -359,6 +380,9 @@ HttpResponse MethodHandler::handleGet(const std::string& path, const LocationCon
 HttpResponse MethodHandler::handlePost(const HttpRequest& req, const std::string& uriPath,
 										const LocationConfig* location)
 {
+	if (location != NULL && !location->getUploadEnabled())
+			return makeError(403);
+	
 	//path to save the file
 	std::string uploadDir;
 	if (location != NULL && location->getUploadEnabled() 
@@ -391,7 +415,11 @@ HttpResponse MethodHandler::handlePost(const HttpRequest& req, const std::string
 		filename = oss.str();
 	}
 	uploadDir += filename;
-
+	
+	struct stat existSt;
+	if (stat(uploadDir.c_str(), &existSt) == 0)
+		return makeError(409);
+	
 	std::ofstream file(uploadDir.c_str(), std::ios::binary);
 	if (!file.is_open())
 		return makeError(403);
@@ -401,16 +429,19 @@ HttpResponse MethodHandler::handlePost(const HttpRequest& req, const std::string
 
 	HttpResponse res;
 	res.setStatus(201);
-	res.setBody(buildStyledPage(201, "Ressource créée", "Le fichier a été enregistré avec succès.", "#4caf50"), "text/html");
-	//res.setBody("<h1>201 - Created</h1>", "text/html");
+	res.setBody(buildStyledPage(201, "Ressource créée", "Le fichier a été enregistré avec succès."), "text/html");
 	return res;
 }
 
-HttpResponse MethodHandler::handleDelete(const std::string& path)
+HttpResponse MethodHandler::handleDelete(const std::string& path, const LocationConfig* location)
 {
 	struct stat st;
 	if (stat(path.c_str(), &st) != 0)
 		return makeError(404);
+
+	std::string root = (location != NULL) ? location->getRoot() : _config.getRoot();
+	if (!isWithinRoot(path, root))
+		return makeError(403);
 
 	if (std::remove(path.c_str()) != 0)
 		return makeError(403);
@@ -426,6 +457,8 @@ std::string MethodHandler::contentTypeFor(const std::string& path)
 	if (dotPos == std::string::npos)
 		return "application/octet-stream";
 	std::string ext = path.substr(dotPos);
+	for (std::string::size_type i = 0; i < ext.size(); ++i)
+		ext[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(ext[i])));
 	
 	if (ext == ".html" || ext == ".htm")	return "text/html";
 	if (ext == ".css")						return "text/css";
