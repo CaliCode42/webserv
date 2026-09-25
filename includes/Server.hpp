@@ -6,7 +6,7 @@
 /*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:16:04 by tcali             #+#    #+#             */
-/*   Updated: 2026/09/02 12:11:06 by tcali            ###   ########.fr       */
+/*   Updated: 2026/09/25 11:22:15 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -81,6 +81,7 @@ public:
 	void					run();
 
 	void					acceptClient(const ListeningSocket& listener);
+	void					processClientRequest(Client& client);
 
 	void					handleClientRead(Client& client);
 	void					handleClientWrite(Client& client);
@@ -89,6 +90,8 @@ public:
 	void					disableClientWrite(int fd);
 	void					disableClientEvents(int fd);
 
+	void					enableClientRead(int fd);
+	
 	void					markClientForRemoval(int fd);
 	bool					isMarkedForRemoval(int fd)const;
 	void					removeMarkedClients();

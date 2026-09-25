@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpRequest.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
+/*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 22:09:59 by sdossa            #+#    #+#             */
-/*   Updated: 2026/09/23 17:03:11 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/09/25 13:15:38 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,23 +30,53 @@ void HttpRequest::appendData(const char* data, size_t len)
 		return;
 	
 	_buffer.append(data, len);
-	
+
+	parseBufferedData();
+}
+
+void HttpRequest::reset()
+{
+	_state = STATE_REQUEST_LINE;
+	_errorCode = 0;
+
+	_method.clear();
+	_uri.clear();
+	_version.clear();
+	_headers.clear();
+	_body.clear();
+
+	_contentLength = 0;
+	_chunkSize = 0;
+}
+
+void HttpRequest::parseBufferedData()
+{
+	if (_state == STATE_COMPLETE || _state == STATE_ERROR)
+		return ;
+
 	bool progress = true;
+
 	while (progress)
 	{
 		switch (_state)
 		{
-			case STATE_REQUEST_LINE: progress = parseRequestLine();
+			case STATE_REQUEST_LINE:
+				progress = parseRequestLine();
 				break;
-			case STATE_HEADERS: progress = parseHeaders();
+			case STATE_HEADERS:
+				progress = parseHeaders();
 				break;
-			case STATE_BODY: progress = parseBody();
+			case STATE_BODY:
+				progress = parseBody();
 				break;
-			case STATE_CHUNK_DATA: progress = parseChunkData();
+			case STATE_CHUNK_DATA:
+				progress = parseChunkData();
 				break;
-			case STATE_CHUNK_SIZE: progress = parseChunkSize();
+			case STATE_CHUNK_SIZE:
+				progress = parseChunkSize();
 				break;
-			default: progress = false;
+			default:
+				progress = false;
 				break;
 		}
 	}
@@ -246,36 +276,47 @@ bool HttpRequest::parseChunkSize()
 
 	// Last chunk
 	if (line == "0")
-	{
-		// Remove "0\r\n"
-		 _buffer.erase(0, eol + 2);
+{
+    // Do not consume "0\r\n" until the complete trailer section
+    // (or the final empty line) has been received.
+    const std::string::size_type trailerStart = eol + 2;
 
-		// Trailers end with an empty line: "\r\n"
-		std::string::size_type trailersEnd = _buffer.find("\r\n\r\n");
+    // No trailers: "0\r\n\r\n"
+    if (_buffer.size() >= trailerStart + 2
+        && _buffer.compare(trailerStart, 2, "\r\n") == 0)
+    {
+        _buffer.erase(0, trailerStart + 2);
+        _chunkSize = 0;
 
-		if (trailersEnd != std::string::npos)
-		{
-			_buffer.erase(0, trailersEnd + 4);
-			_chunkSize = 0;
-			_state = STATE_COMPLETE;
-			return true;
-		}
+        std::ostringstream lenOss;
+        lenOss << _body.size();
+        _headers["content-length"] = lenOss.str();
 
-		// No trailer: just the final CRLF
-		if (_buffer.size() >= 2 && _buffer.substr(0, 2) == "\r\n")
-		{
-			_buffer.erase(0, 2);
-			_chunkSize = 0;
-			//recalculate CL from the real body
-			std::ostringstream lenOss;
-			lenOss << _body.size();
-			_headers["content-length"] = lenOss.str();
-			_state = STATE_COMPLETE;
-			return true;
-		}
+        _state = STATE_COMPLETE;
+        return true;
+    }
 
-		return false;
-	}
+    // Optional trailers: wait for the terminating empty line.
+    std::string::size_type trailersEnd =
+        _buffer.find("\r\n\r\n", trailerStart);
+
+    if (trailersEnd != std::string::npos)
+    {
+        _buffer.erase(0, trailersEnd + 4);
+        _chunkSize = 0;
+
+        std::ostringstream lenOss;
+        lenOss << _body.size();
+        _headers["content-length"] = lenOss.str();
+
+        _state = STATE_COMPLETE;
+        return true;
+    }
+
+    // The terminating chunk/trailers are fragmented across recv().
+    // Keep the buffer untouched and wait for more data.
+    return false;
+}
 
 	std::istringstream iss(line);
 	iss >> std::hex >> _chunkSize;

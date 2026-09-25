@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
+/*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/05/29 18:33:43 by tcali             #+#    #+#             */
-/*   Updated: 2026/09/22 11:32:30 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/09/25 13:49:55 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -379,25 +379,10 @@ void	Server::acceptClient(const ListeningSocket& listener)
 		_fds.push_back(client);
 	}
 }
-
-void	Server::handleClientRead(Client& client)
+void	Server::processClientRequest(Client& client)
 {
-	char buffer[4096];
-
-	ssize_t	bytes = recv(client.getFd(), buffer, sizeof(buffer), 0);
-
-	if (bytes <= 0)
-	{
-		markClientForRemoval(client.getFd());
-		return ;
-	}
-
-	client.updateActivity();
-	
 	HttpRequest& request = client.getRequest();
-
-	request.appendData(buffer, static_cast<std::size_t>(bytes));
-
+	
 	if (request.hasError())
 	{
 		int	statusCode = request.errorCode();
@@ -493,13 +478,68 @@ void	Server::handleClientRead(Client& client)
 	}
 }
 
+void	Server::handleClientRead(Client& client)
+{
+	char buffer[4096];
+
+	ssize_t	bytes = recv(client.getFd(), buffer, sizeof(buffer), 0);
+
+	if (bytes <= 0)
+	{
+		markClientForRemoval(client.getFd());
+		return ;
+	}
+
+	client.updateActivity();
+	
+	HttpRequest& request = client.getRequest();
+
+	request.appendData(buffer, static_cast<std::size_t>(bytes));
+
+	if (request.hasError() || request.isComplete())
+		processClientRequest(client);
+}
+
+static bool hasConnectionToken(const std::string& value,
+	const std::string& wanted)
+{
+	std::string::size_type	start = 0;
+
+	while (start < value.size())
+	{
+		std::string::size_type	end = value.find(',', start);
+		if (end == std::string::npos)
+			end = value.size();
+
+		std::string	token = value.substr(start, end - start);
+
+		std::string::size_type	first = token.find_first_not_of(" \t");
+		std::string::size_type	last = token.find_last_not_of(" \t");
+
+		if (first != std::string::npos)
+		{
+			token = token.substr(first, last - first + 1);
+
+			for (std::size_t i = 0; i < token.size(); ++i)
+				token[i] = static_cast<char>(
+					std::tolower(static_cast<unsigned char>(token[i])));
+
+			if (token == wanted)
+				return true;
+		}
+
+		start = end + 1;
+	}
+	return false;
+}
+
 void	Server::handleClientWrite(Client& client)
 {
 	const std::string&	data = client.getWriteBuffer();
 
 	if (data.empty())
 	{
-		markClientForRemoval(client.getFd());
+		enableClientRead(client.getFd());
 		return ;
 	}
 
@@ -516,9 +556,28 @@ void	Server::handleClientWrite(Client& client)
 
 	if (!client.hasPendingWriteData())
 	{
-		int fd = client.getFd();
-		disableClientWrite(fd);
-		markClientForRemoval(fd);
+		int				fd = client.getFd();
+		HttpRequest&	request = client.getRequest();
+		
+		if (hasConnectionToken(request.getHeader("Connection"), "close"))
+		{
+			markClientForRemoval(fd);
+			return ;
+		}
+
+		if (request.hasError())
+		{
+			markClientForRemoval(fd);
+			return ;
+		}
+
+		request.reset();
+		request.parseBufferedData();
+
+		if (request.hasError() || request.isComplete())
+			processClientRequest(client);
+		else
+			enableClientRead(fd);
 	}
 }
 
@@ -553,6 +612,18 @@ void	Server::disableClientEvents(int fd)
 		if (_fds[i].fd == fd)
 		{
 			_fds[i].events = 0;
+			return ;
+		}
+	}
+}
+
+void	Server::enableClientRead(int fd)
+{
+	for (std::size_t i = 0; i < _fds.size(); ++i)
+	{
+		if (_fds[i].fd == fd)
+		{
+			_fds[i].events = POLLIN;
 			return ;
 		}
 	}

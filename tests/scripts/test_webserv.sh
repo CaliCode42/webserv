@@ -11,7 +11,8 @@ CLIENT_TIMEOUT_VALUE=10
 SERVER_BIN="./webserv"
 SERVER_CONFIG="test.conf"
 SERVER_PID=""
-SERVER_LOG="${TMP_DIR}/webserv.log"
+# SERVER_LOG="${TMP_DIR}/webserv.log"
+SERVER_LOG="webserv-debug.log"
 
 GREEN="\033[0;32m"
 RED="\033[0;31m"
@@ -1088,6 +1089,9 @@ TEST_NUMBER=$((TEST_NUMBER + 1))
 
 CHUNKED_LIMIT_RESPONSE="${TMP_DIR}/chunked_limit_response.txt"
 
+# for i in $(seq 1 20); do
+#     echo "=== RUN $i ==="
+
 {
     printf 'POST /chunked_limit.bin HTTP/1.1\r\n'
     printf 'Host: %s\r\n' "$HOST"
@@ -1104,12 +1108,19 @@ CHUNKED_LIMIT_RESPONSE="${TMP_DIR}/chunked_limit_response.txt"
 
     printf '0\r\n'
     printf '\r\n'
-} | timeout 3 nc "$HOST" "$PORT" > "${CHUNKED_LIMIT_RESPONSE}" 2>/dev/null || true
+} | timeout 10 nc "$HOST" "$PORT" > "${CHUNKED_LIMIT_RESPONSE}" 2>/dev/null || true
+
+# done
 
 if grep -q '^HTTP/.* 201 ' "${CHUNKED_LIMIT_RESPONSE}"; then
     pass "Chunked body exactly at MAX_BODY_SIZE is accepted"
 else
     fail "Chunked body at MAX_BODY_SIZE does not return 201"
+	echo "--- response ---"
+    cat "${CHUNKED_LIMIT_RESPONSE}"
+    echo
+    echo "--- size ---"
+    wc -c "${CHUNKED_LIMIT_RESPONSE}"
 fi
 
 

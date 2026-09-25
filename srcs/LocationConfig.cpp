@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   LocationConfig.cpp                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
+/*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/16 15:29:03 by sdossa            #+#    #+#             */
-/*   Updated: 2026/09/25 08:34:20 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/09/25 12:29:20 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,8 @@
 
 LocationConfig::LocationConfig()
 	: _path(""), _root("www"), _index("index.html"), _autoindex(false),
-	   _redirectCode(301), _redirect(""), _uploadEnabled(false), _uploadPath(""), _rootIsExplicit(false)
+	   _redirectCode(301), _redirect(""), _uploadEnabled(false), _uploadEnabledIsExplicit(false),
+	   _uploadPath(""), _rootIsExplicit(false)
 {}
 
 LocationConfig::~LocationConfig()
@@ -120,6 +121,12 @@ bool LocationConfig::getUploadEnabled() const
 void LocationConfig::setUploadEnabled(bool value)
 {
 	_uploadEnabled = value;
+	_uploadEnabledIsExplicit = true;
+}
+
+bool LocationConfig::isUploadEnabledExplicit() const
+{
+	return (_uploadEnabledIsExplicit);
 }
 
 std::string LocationConfig::getUploadPath() const

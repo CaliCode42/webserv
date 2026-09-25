@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpRequest.hpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
+/*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/23 22:09:53 by sdossa            #+#    #+#             */
-/*   Updated: 2026/09/04 14:07:06 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/09/25 11:12:38 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,6 +38,8 @@ public:
 	~HttpRequest();
 	
 	void appendData(const char* data, size_t len);
+	void reset();
+	void parseBufferedData();
 
 	bool isComplete()	const { return _state == STATE_COMPLETE; }
 	bool hasError()		const { return _state == STATE_ERROR; }

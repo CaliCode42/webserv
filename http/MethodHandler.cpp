@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   MethodHandler.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
+/*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/07/25 19:50:52 by sdossa            #+#    #+#             */
-/*   Updated: 2026/09/25 08:42:18 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/09/25 12:35:09 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -135,7 +135,6 @@ HttpResponse MethodHandler::handle(const HttpRequest& req)
 	const std::map<std::string, std::string>& headers = req.getHeaders();
 	for (std::map<std::string, std::string>::const_iterator it = headers.begin(); it != headers.end(); ++it)
 		std::cout << it->first << ": " << it->second << std::endl;
-
 	
 	//decode before anti path-traversal test or "%2e%2e" pass through
 	std::string decodedUri = decodeUrl(req.getUri());
@@ -380,7 +379,25 @@ HttpResponse MethodHandler::handleGet(const std::string& path, const LocationCon
 HttpResponse MethodHandler::handlePost(const HttpRequest& req, const std::string& uriPath,
 										const LocationConfig* location)
 {
-	if (location != NULL && !location->getUploadEnabled())
+	std::cout << "POST uri: " << uriPath << std::endl;
+
+	if (location == NULL)
+	{
+		std::cout << "POST location: NULL" << std::endl;
+	}
+	else
+	{
+		std::cout << "POST location path: " << location->getPath() << std::endl;
+		std::cout << "POST location root: " << location->getRoot() << std::endl;
+		std::cout << "POST upload enabled: "
+				<< location->getUploadEnabled() << std::endl;
+		std::cout << "POST upload explicit: "
+				<< location->isUploadEnabledExplicit() << std::endl;
+		std::cout << "POST upload path: "
+				<< location->getUploadPath() << std::endl;
+	}
+
+	if (location != NULL && location->isUploadEnabledExplicit() && !location->getUploadEnabled())
 			return makeError(403);
 	
 	//path to save the file

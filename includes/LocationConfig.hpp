@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   LocationConfig.hpp                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: sdossa <sdossa@student.42.fr>              +#+  +:+       +#+        */
+/*   By: tcali <tcali@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/16 15:29:36 by sdossa            #+#    #+#             */
-/*   Updated: 2026/09/06 23:07:57 by sdossa           ###   ########.fr       */
+/*   Updated: 2026/09/25 12:27:32 by tcali            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,7 @@ private:
 	int _redirectCode;
 	std::string _redirect;
 	bool _uploadEnabled;
+	bool _uploadEnabledIsExplicit;
 	std::string _uploadPath;
 	std::map<std::string, std::string> _cgiExtensions;
 	bool _rootIsExplicit;
@@ -60,6 +61,7 @@ public:
 
 	bool getUploadEnabled() const;
 	void setUploadEnabled(bool value);
+	bool isUploadEnabledExplicit() const;
 
 	std::string getUploadPath() const;
 	void setUploadPath(const std::string& path);
